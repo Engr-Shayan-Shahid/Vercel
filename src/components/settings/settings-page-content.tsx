@@ -3,12 +3,11 @@
 import { NotificationSettingsForm } from "@/components/settings/notification-settings-form";
 import { OrganizationSettingsForm } from "@/components/settings/organization-settings-form";
 import { ProfileSettingsForm } from "@/components/settings/profile-settings-form";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserSettings } from "@/context/user-settings-context";
 
 export function SettingsPageContent() {
-  const { isLoading, source } = useUserSettings();
+  const { isLoading, error } = useUserSettings();
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -19,15 +18,13 @@ export function SettingsPageContent() {
         <p className="mt-1.5 text-sm text-muted-foreground">
           Manage your profile, organization identifiers, and notification preferences.
         </p>
-        {source && (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-            <span>Data source:</span>
-            <Badge variant="outline" className="capitalize">
-              {source === "supabase" ? "Supabase" : "Local storage"}
-            </Badge>
-          </div>
-        )}
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="rounded-lg border border-border/60 bg-charcoal/40 px-6 py-12 text-center text-sm text-muted-foreground">

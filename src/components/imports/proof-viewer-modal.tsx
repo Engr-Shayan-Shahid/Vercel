@@ -13,7 +13,7 @@ interface ProofViewerModalProps {
   onOpenChange: (open: boolean) => void;
   fileName: string;
   fileUrl?: string;
-  mimeType?: string;
+  isLoading?: boolean;
 }
 
 export function ProofViewerModal({
@@ -21,12 +21,10 @@ export function ProofViewerModal({
   onOpenChange,
   fileName,
   fileUrl,
-  mimeType,
+  isLoading = false,
 }: ProofViewerModalProps) {
-  const isPdf = mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
-  const isImage =
-    mimeType?.startsWith("image/") ||
-    /\.(png|jpe?g|gif|webp)$/i.test(fileName);
+  const isPdf = fileName.toLowerCase().endsWith(".pdf");
+  const isImage = /\.(png|jpe?g|gif|webp)$/i.test(fileName);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -37,7 +35,9 @@ export function ProofViewerModal({
         </DialogHeader>
 
         <div className="max-h-[70vh] overflow-auto rounded-lg border border-border/60 bg-deep-black/60">
-          {!fileUrl ? (
+          {isLoading ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">Loading proof document…</p>
+          ) : !fileUrl ? (
             <p className="p-8 text-center text-sm text-muted-foreground">
               Proof file is no longer available for this record.
             </p>

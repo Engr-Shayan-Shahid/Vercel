@@ -9,9 +9,53 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      organizations: {
+        Row: {
+          id: string;
+          name: string;
+          eori_number: string;
+          vat_tax_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name?: string;
+          eori_number?: string;
+          vat_tax_id?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          eori_number?: string;
+          vat_tax_id?: string;
+          created_at?: string;
+        };
+      };
+      organization_members: {
+        Row: {
+          organization_id: string;
+          user_id: string;
+          role: string;
+          created_at: string;
+        };
+        Insert: {
+          organization_id: string;
+          user_id: string;
+          role?: string;
+          created_at?: string;
+        };
+        Update: {
+          organization_id?: string;
+          user_id?: string;
+          role?: string;
+          created_at?: string;
+        };
+      };
       emissions_reports: {
         Row: {
           id: string;
+          organization_id: string;
           report_id: string;
           period: string;
           year: number;
@@ -28,6 +72,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
+          organization_id: string;
           report_id: string;
           period: string;
           year: number;
@@ -44,6 +89,7 @@ export interface Database {
         };
         Update: {
           id?: string;
+          organization_id?: string;
           report_id?: string;
           period?: string;
           year?: number;
@@ -62,6 +108,7 @@ export interface Database {
       import_logs: {
         Row: {
           id: string;
+          organization_id: string;
           material_type: string;
           mass: number;
           origin_country: string;
@@ -74,10 +121,12 @@ export interface Database {
           ets_price: number;
           tax_liability: number;
           proof_of_payment_file_name: string | null;
+          proof_of_payment_storage_path: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
+          organization_id: string;
           material_type: string;
           mass: number;
           origin_country: string;
@@ -90,10 +139,12 @@ export interface Database {
           ets_price: number;
           tax_liability: number;
           proof_of_payment_file_name?: string | null;
+          proof_of_payment_storage_path?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
+          organization_id?: string;
           material_type?: string;
           mass?: number;
           origin_country?: string;
@@ -106,18 +157,16 @@ export interface Database {
           ets_price?: number;
           tax_liability?: number;
           proof_of_payment_file_name?: string | null;
+          proof_of_payment_storage_path?: string | null;
           created_at?: string;
         };
       };
       profiles: {
         Row: {
           id: string;
-          user_key: string;
+          user_id: string;
           compliance_officer_name: string;
           email: string;
-          company_legal_name: string;
-          eori_number: string;
-          vat_tax_id: string;
           new_eu_regulation_alerts: boolean;
           quarterly_report_reminders: boolean;
           security_alerts: boolean;
@@ -125,12 +174,9 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          user_key?: string;
-          compliance_officer_name: string;
-          email: string;
-          company_legal_name?: string;
-          eori_number?: string;
-          vat_tax_id?: string;
+          user_id: string;
+          compliance_officer_name?: string;
+          email?: string;
           new_eu_regulation_alerts?: boolean;
           quarterly_report_reminders?: boolean;
           security_alerts?: boolean;
@@ -138,12 +184,9 @@ export interface Database {
         };
         Update: {
           id?: string;
-          user_key?: string;
+          user_id?: string;
           compliance_officer_name?: string;
           email?: string;
-          company_legal_name?: string;
-          eori_number?: string;
-          vat_tax_id?: string;
           new_eu_regulation_alerts?: boolean;
           quarterly_report_reminders?: boolean;
           security_alerts?: boolean;
@@ -151,5 +194,9 @@ export interface Database {
         };
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

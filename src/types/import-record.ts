@@ -32,6 +32,7 @@ export interface ImportRecord {
   etsPrice: number;
   taxLiability: number;
   proofOfPaymentFileName?: string;
+  proofOfPaymentStoragePath?: string;
   proofOfPaymentUrl?: string;
   proofOfPaymentMimeType?: string;
   createdAt: string;

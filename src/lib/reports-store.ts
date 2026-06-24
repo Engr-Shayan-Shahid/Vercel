@@ -3,8 +3,6 @@ import type { Database } from "@/types/database";
 
 type ReportRow = Database["public"]["Tables"]["emissions_reports"]["Row"];
 
-const memoryStore: EmissionsReport[] = [];
-
 export function mapRowToReport(row: ReportRow): EmissionsReport {
   return {
     id: row.id,
@@ -25,10 +23,12 @@ export function mapRowToReport(row: ReportRow): EmissionsReport {
 }
 
 export function mapReportToInsert(
-  report: EmissionsReport
+  report: EmissionsReport,
+  organizationId: string
 ): Database["public"]["Tables"]["emissions_reports"]["Insert"] {
   return {
     id: report.id,
+    organization_id: organizationId,
     report_id: report.reportId,
     period: report.period,
     year: report.year,
@@ -40,22 +40,10 @@ export function mapReportToInsert(
     ets_price: report.etsPrice,
     status: report.status,
     import_ids: report.importIds,
-    aggregated_rows: report.aggregatedRows as unknown as Database["public"]["Tables"]["emissions_reports"]["Insert"]["aggregated_rows"],
+    aggregated_rows:
+      report.aggregatedRows as unknown as Database["public"]["Tables"]["emissions_reports"]["Insert"]["aggregated_rows"],
     created_at: report.createdAt,
   };
 }
 
-export function listMemoryReports(): EmissionsReport[] {
-  return [...memoryStore].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-}
-
-export function addMemoryReport(report: EmissionsReport): EmissionsReport {
-  memoryStore.unshift(report);
-  return report;
-}
-
-export function generateReportId(year: number, quarter: ReportQuarter, sequence: number): string {
-  return `RPT-${year}-${quarter}-${String(sequence).padStart(3, "0")}`;
-}
+export { generateReportId } from "@/lib/imports-store";

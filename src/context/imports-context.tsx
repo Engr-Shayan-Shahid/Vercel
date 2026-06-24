@@ -28,10 +28,12 @@ interface MutationResult {
 interface ImportsContextValue {
   imports: ImportRecord[];
   isLoading: boolean;
+  error: string | null;
   addImport: (input: ImportRecordInput) => Promise<MutationResult>;
   updateImport: (record: ImportRecord, input: ImportRecordEditInput) => Promise<void>;
   deleteImport: (id: string) => Promise<void>;
   refreshImports: () => Promise<void>;
+  getProofUrl: (importId: string) => Promise<string | null>;
   totalMass: number;
   totalTaxLiability: number;
   totalEmbeddedEmissions: number;
@@ -61,6 +63,25 @@ async function fetchCBAMCalculation(
   return data as CBAMApiResult;
 }
 
+async function uploadProofFile(importId: string, file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("importId", importId);
+
+  const response = await fetch("/api/proof-upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error ?? "Failed to upload proof document.");
+  }
+
+  return data as { fileName: string; storagePath: string };
+}
+
 function buildImportRecord(
   base: Partial<ImportRecord> & Pick<ImportRecord, "id" | "materialType">,
   calculation: CBAMApiResult,
@@ -80,8 +101,8 @@ function buildImportRecord(
     etsPrice: calculation.etsPrice,
     taxLiability: calculation.liability,
     proofOfPaymentFileName: overrides.proofOfPaymentFileName ?? base.proofOfPaymentFileName,
-    proofOfPaymentUrl: overrides.proofOfPaymentUrl ?? base.proofOfPaymentUrl,
-    proofOfPaymentMimeType: overrides.proofOfPaymentMimeType ?? base.proofOfPaymentMimeType,
+    proofOfPaymentStoragePath:
+      overrides.proofOfPaymentStoragePath ?? base.proofOfPaymentStoragePath,
     createdAt: base.createdAt ?? new Date().toISOString(),
   };
 }
@@ -89,9 +110,11 @@ function buildImportRecord(
 export function ImportsProvider({ children }: { children: ReactNode }) {
   const [imports, setImports] = useState<ImportRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refreshImports = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
 
     try {
       const response = await fetch("/api/import-logs");
@@ -102,8 +125,8 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
       }
 
       setImports(data.imports ?? []);
-    } catch {
-      setImports((prev) => prev);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load import logs.");
     } finally {
       setIsLoading(false);
     }
@@ -116,12 +139,10 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
   const persistImport = useCallback(async (record: ImportRecord, method: "POST" | "PATCH") => {
     const id = record.id?.trim();
     if (!id) {
-      console.error("No ID found for operation");
       throw new Error("No ID found for operation");
     }
 
     const url = method === "POST" ? "/api/import-logs" : `/api/import-logs/${id}`;
-    console.log(`Attempting to ${method === "POST" ? "create" : "edit"} ID:`, id);
 
     const response = await fetch(url, {
       method,
@@ -136,6 +157,17 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
     }
 
     return data.import as ImportRecord;
+  }, []);
+
+  const getProofUrl = useCallback(async (importId: string) => {
+    const response = await fetch(`/api/proof-upload?importId=${encodeURIComponent(importId)}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return data.url as string;
   }, []);
 
   const addImport = useCallback(
@@ -154,9 +186,14 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
           Number(input.foreignPrice) || 0
         );
 
+        const importId = crypto.randomUUID();
+
+        let proofStoragePath: string | undefined;
+        let proofFileName: string | undefined;
+
         const record = buildImportRecord(
           {
-            id: crypto.randomUUID(),
+            id: importId,
             materialType: input.materialType as MaterialType,
           },
           calculation,
@@ -165,22 +202,30 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
             originCountry: input.originCountry.trim(),
             emissionFactor: Number(input.emissionFactor),
             proofOfPaymentFileName: input.proofOfPayment?.name,
-            proofOfPaymentUrl: input.proofOfPayment
-              ? URL.createObjectURL(input.proofOfPayment)
-              : undefined,
-            proofOfPaymentMimeType: input.proofOfPayment?.type,
           }
         );
 
         const saved = await persistImport(record, "POST");
-        setImports((prev) => [
-          {
-            ...saved,
-            proofOfPaymentUrl: record.proofOfPaymentUrl,
-            proofOfPaymentMimeType: record.proofOfPaymentMimeType,
-          },
-          ...prev.filter((item) => item.id !== saved.id),
-        ]);
+
+        if (input.proofOfPayment) {
+          const upload = await uploadProofFile(importId, input.proofOfPayment);
+          proofStoragePath = upload.storagePath;
+          proofFileName = upload.fileName;
+
+          const updated = await persistImport(
+            {
+              ...saved,
+              proofOfPaymentFileName: proofFileName,
+              proofOfPaymentStoragePath: proofStoragePath,
+            },
+            "PATCH"
+          );
+
+          setImports((prev) => [updated, ...prev.filter((item) => item.id !== updated.id)]);
+        } else {
+          setImports((prev) => [saved, ...prev.filter((item) => item.id !== saved.id)]);
+        }
+
         return { success: true };
       } catch (error) {
         const message =
@@ -196,11 +241,8 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
       const id = record.id?.trim();
 
       if (!id) {
-        console.error("No ID found for operation");
         throw new Error("No ID found for operation");
       }
-
-      console.log("Attempting to edit ID:", id);
 
       const calculation = await fetchCBAMCalculation(
         record.materialType,
@@ -213,20 +255,12 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
         mass: Number(input.mass),
         originCountry: input.originCountry.trim(),
         emissionFactor: Number(input.emissionFactor),
+        proofOfPaymentFileName: record.proofOfPaymentFileName,
+        proofOfPaymentStoragePath: record.proofOfPaymentStoragePath,
       });
 
       const saved = await persistImport(updated, "PATCH");
-      setImports((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...saved,
-                proofOfPaymentUrl: record.proofOfPaymentUrl ?? item.proofOfPaymentUrl,
-                proofOfPaymentMimeType: record.proofOfPaymentMimeType ?? item.proofOfPaymentMimeType,
-              }
-            : item
-        )
-      );
+      setImports((prev) => prev.map((item) => (item.id === id ? saved : item)));
     },
     [persistImport]
   );
@@ -235,27 +269,14 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
     const normalizedId = id?.trim();
 
     if (!normalizedId) {
-      console.error("No ID found for operation");
       throw new Error("No ID found for operation");
     }
-
-    console.log("Attempting to delete ID:", normalizedId);
-
-    let proofUrl: string | undefined;
-    setImports((prev) => {
-      proofUrl = prev.find((item) => item.id === normalizedId)?.proofOfPaymentUrl;
-      return prev;
-    });
 
     const response = await fetch(`/api/import-logs/${normalizedId}`, { method: "DELETE" });
     const data = await response.json();
 
     if (!response.ok) {
       throw new Error(data.error ?? "Failed to delete import record.");
-    }
-
-    if (proofUrl) {
-      URL.revokeObjectURL(proofUrl);
     }
 
     setImports((prev) => prev.filter((item) => item.id !== normalizedId));
@@ -286,10 +307,12 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
     () => ({
       imports,
       isLoading,
+      error,
       addImport,
       updateImport,
       deleteImport,
       refreshImports,
+      getProofUrl,
       totalMass,
       totalTaxLiability,
       totalEmbeddedEmissions,
@@ -298,10 +321,12 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
     [
       imports,
       isLoading,
+      error,
       addImport,
       updateImport,
       deleteImport,
       refreshImports,
+      getProofUrl,
       totalMass,
       totalTaxLiability,
       totalEmbeddedEmissions,

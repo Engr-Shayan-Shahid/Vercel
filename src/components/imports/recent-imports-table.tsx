@@ -26,8 +26,10 @@ function getRecordId(record: ImportRecord): string | null {
 }
 
 export function RecentImportsTable() {
-  const { imports, isLoading } = useImports();
+  const { imports, isLoading, error, getProofUrl } = useImports();
   const [proofRecord, setProofRecord] = useState<ImportRecord | null>(null);
+  const [proofUrl, setProofUrl] = useState<string | undefined>();
+  const [proofLoading, setProofLoading] = useState(false);
   const [editRecord, setEditRecord] = useState<ImportRecord | null>(null);
   const [deleteRecord, setDeleteRecord] = useState<ImportRecord | null>(null);
 
@@ -39,6 +41,16 @@ export function RecentImportsTable() {
     }
     console.log("Opening edit for ID:", id);
     setEditRecord({ ...record, id });
+  }
+
+  function handleViewProof(record: ImportRecord) {
+    setProofRecord(record);
+    setProofUrl(undefined);
+    setProofLoading(true);
+
+    void getProofUrl(record.id)
+      .then((url) => setProofUrl(url ?? undefined))
+      .finally(() => setProofLoading(false));
   }
 
   function handleDelete(record: ImportRecord) {
@@ -63,6 +75,11 @@ export function RecentImportsTable() {
           </p>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
           {isLoading ? (
             <LoadingState />
           ) : imports.length === 0 ? (
@@ -119,7 +136,7 @@ export function RecentImportsTable() {
                               <p className="mt-0.5 text-[10px]">
                                 <button
                                   type="button"
-                                  onClick={() => setProofRecord(record)}
+                                  onClick={() => handleViewProof(record)}
                                   className="text-primary underline-offset-2 hover:underline"
                                 >
                                   Proof: {record.proofOfPaymentFileName}
@@ -184,11 +201,14 @@ export function RecentImportsTable() {
       <ProofViewerModal
         open={proofRecord !== null}
         onOpenChange={(open) => {
-          if (!open) setProofRecord(null);
+          if (!open) {
+            setProofRecord(null);
+            setProofUrl(undefined);
+          }
         }}
         fileName={proofRecord?.proofOfPaymentFileName ?? "Proof of payment"}
-        fileUrl={proofRecord?.proofOfPaymentUrl}
-        mimeType={proofRecord?.proofOfPaymentMimeType}
+        fileUrl={proofUrl}
+        isLoading={proofLoading}
       />
 
       <EditImportModal

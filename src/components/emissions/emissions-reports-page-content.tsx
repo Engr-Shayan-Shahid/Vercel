@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { ExportReportButton } from "@/components/emissions/export-report-button";
 import { NewReportModal } from "@/components/emissions/new-report-modal";
 import { ReportAggregationTable } from "@/components/emissions/report-aggregation-table";
 import { ReportsTable } from "@/components/emissions/reports-table";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useImports } from "@/context/imports-context";
 import { useEmissionsReports } from "@/hooks/use-emissions-reports";
@@ -18,9 +19,10 @@ import { CBAM_BENCHMARK_FACTOR } from "@/lib/report-compliance";
 import type { CreateReportInput } from "@/types/emissions-report";
 
 export function EmissionsReportsPageContent() {
-  const { reports, isLoading, error, source, createReport } = useEmissionsReports();
+  const { reports, isLoading, error, createReport, updateReportStatus } = useEmissionsReports();
   const { imports } = useImports();
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedReport = useMemo(
     () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
@@ -30,6 +32,24 @@ export function EmissionsReportsPageContent() {
   const handleCreateReport = async (input: CreateReportInput) => {
     const report = await createReport(input);
     setSelectedReportId(report.id);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!selectedReport || selectedReport.status !== "draft") return;
+
+    setIsSubmitting(true);
+    try {
+      await updateReportStatus(selectedReport.id, "submitted");
+      toast.success("Report submitted", {
+        description: `${selectedReport.reportId} is ready for export.`,
+      });
+    } catch (err) {
+      toast.error("Submit failed", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -43,14 +63,6 @@ export function EmissionsReportsPageContent() {
             Generate quarterly CBAM emissions reports, aggregate goods by CN code and origin, and
             export compliance files.
           </p>
-          {source && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-              <span>Data source:</span>
-              <Badge variant="outline" className="capitalize">
-                {source === "supabase" ? "Supabase" : "In-memory (configure Supabase env)"}
-              </Badge>
-            </div>
-          )}
         </div>
         <NewReportModal onCreateReport={handleCreateReport} />
       </div>
@@ -87,7 +99,19 @@ export function EmissionsReportsPageContent() {
                   Factor {CBAM_BENCHMARK_FACTOR}
                 </p>
               </div>
-              <ExportReportButton report={selectedReport} />
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedReport.status === "draft" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSubmitReport()}
+                  >
+                    Mark as Submitted
+                  </Button>
+                )}
+                <ExportReportButton report={selectedReport} />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-3">

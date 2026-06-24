@@ -12,8 +12,9 @@ import {
 
 import {
   fetchUserSettings,
-  isSupabaseConfigured,
-  saveUserSettings,
+  saveNotificationSettings,
+  saveOrganizationSettings,
+  saveProfileSettings,
 } from "@/lib/supabase-client";
 import {
   DEFAULT_USER_SETTINGS,
@@ -27,7 +28,7 @@ interface UserSettingsContextValue {
   settings: UserSettings;
   isLoading: boolean;
   isSaving: boolean;
-  source: "supabase" | "local";
+  error: string | null;
   refreshSettings: () => Promise<void>;
   saveProfile: (values: ProfileSettingsValues) => Promise<UserSettings>;
   saveOrganization: (values: OrganizationSettingsValues) => Promise<UserSettings>;
@@ -40,23 +41,21 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [source, setSource] = useState<"supabase" | "local">(
-    isSupabaseConfigured() ? "supabase" : "local"
-  );
+  const [error, setError] = useState<string | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
   const refreshSettings = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
 
     try {
       const data = await fetchUserSettings();
       setSettings(data);
       settingsRef.current = data;
-      setSource(isSupabaseConfigured() ? "supabase" : "local");
-    } catch {
+    } catch (err) {
       setSettings(DEFAULT_USER_SETTINGS);
-      settingsRef.current = DEFAULT_USER_SETTINGS;
+      setError(err instanceof Error ? err.message : "Failed to load settings.");
     } finally {
       setIsLoading(false);
     }
@@ -66,42 +65,83 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
     void refreshSettings();
   }, [refreshSettings]);
 
-  const persist = useCallback(async (partial: Partial<UserSettings>) => {
+  const saveProfile = useCallback(async (values: ProfileSettingsValues) => {
     setIsSaving(true);
+    setError(null);
 
     try {
-      const merged = { ...settingsRef.current, ...partial };
-      const saved = await saveUserSettings(merged);
+      const saved = await saveProfileSettings({
+        ...values,
+        userId: settingsRef.current.userId,
+      });
       setSettings(saved);
       settingsRef.current = saved;
-      setSource(isSupabaseConfigured() ? "supabase" : "local");
       return saved;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save profile.";
+      setError(message);
+      throw new Error(message);
     } finally {
       setIsSaving(false);
     }
   }, []);
 
-  const saveProfile = useCallback(
-    (values: ProfileSettingsValues) => persist(values),
-    [persist]
-  );
+  const saveOrganization = useCallback(async (values: OrganizationSettingsValues) => {
+    setIsSaving(true);
+    setError(null);
 
-  const saveOrganization = useCallback(
-    (values: OrganizationSettingsValues) => persist(values),
-    [persist]
-  );
+    const organizationId = settingsRef.current.organizationId;
+    if (!organizationId) {
+      const message = "Organization not found.";
+      setError(message);
+      throw new Error(message);
+    }
 
-  const saveNotifications = useCallback(
-    (values: NotificationSettingsValues) => persist(values),
-    [persist]
-  );
+    try {
+      const saved = await saveOrganizationSettings(organizationId, values);
+      setSettings(saved);
+      settingsRef.current = saved;
+      return saved;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save organization.";
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
+
+  const saveNotifications = useCallback(async (values: NotificationSettingsValues) => {
+    setIsSaving(true);
+    setError(null);
+
+    const userId = settingsRef.current.userId;
+    if (!userId) {
+      const message = "User not found.";
+      setError(message);
+      throw new Error(message);
+    }
+
+    try {
+      const saved = await saveNotificationSettings(userId, values);
+      setSettings(saved);
+      settingsRef.current = saved;
+      return saved;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save notifications.";
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
 
   const value = useMemo(
     () => ({
       settings,
       isLoading,
       isSaving,
-      source,
+      error,
       refreshSettings,
       saveProfile,
       saveOrganization,
@@ -111,7 +151,7 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
       settings,
       isLoading,
       isSaving,
-      source,
+      error,
       refreshSettings,
       saveProfile,
       saveOrganization,
@@ -119,9 +159,7 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
     ]
   );
 
-  return (
-    <UserSettingsContext.Provider value={value}>{children}</UserSettingsContext.Provider>
-  );
+  return <UserSettingsContext.Provider value={value}>{children}</UserSettingsContext.Provider>;
 }
 
 export function useUserSettings() {

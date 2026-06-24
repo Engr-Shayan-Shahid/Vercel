@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const DEFAULT_USER_KEY = "default";
-
 export const EORI_REGEX = /^[A-Za-z0-9]{17}$/;
 
 export const profileSettingsSchema = z.object({
@@ -50,13 +48,14 @@ export type OrganizationSettingsValues = z.infer<typeof organizationSettingsSche
 export type NotificationSettingsValues = z.infer<typeof notificationSettingsSchema>;
 export type UserSettings = z.infer<typeof userSettingsSchema> & {
   id?: string;
-  userKey?: string;
+  userId?: string;
+  organizationId?: string;
   updatedAt?: string;
 };
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
-  complianceOfficerName: "Alex Morgan",
-  email: "alex.morgan@example.com",
+  complianceOfficerName: "",
+  email: "",
   companyLegalName: "",
   eoriNumber: "",
   vatTaxId: "",
@@ -66,11 +65,33 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
 };
 
 export function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || "CO";
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "CO"
+  );
+}
+
+export function getCurrentQuarter(): { year: number; quarter: "Q1" | "Q2" | "Q3" | "Q4" } {
+  const now = new Date();
+  const month = now.getUTCMonth();
+  const year = now.getUTCFullYear();
+  const quarter = (["Q1", "Q2", "Q3", "Q4"] as const)[Math.floor(month / 3)];
+  return { year, quarter };
+}
+
+export function getNextFilingDeadline(year: number, quarter: "Q1" | "Q2" | "Q3" | "Q4"): Date {
+  const deadlines: Record<typeof quarter, [number, number]> = {
+    Q1: [4, 30],
+    Q2: [7, 31],
+    Q3: [10, 31],
+    Q4: [1, 31],
+  };
+  const [month, day] = deadlines[quarter];
+  const deadlineYear = quarter === "Q4" ? year + 1 : year;
+  return new Date(Date.UTC(deadlineYear, month - 1, day));
 }

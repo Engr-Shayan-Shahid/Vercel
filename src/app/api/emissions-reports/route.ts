@@ -1,43 +1,43 @@
 import { NextResponse } from "next/server";
 
+import { getApiContext } from "@/lib/auth/api-context";
+import { generateReportId } from "@/lib/imports-store";
 import {
-  addMemoryReport,
-  generateReportId,
-  listMemoryReports,
   mapReportToInsert,
   mapRowToReport,
 } from "@/lib/reports-store";
 import { summarizeReportFromImports } from "@/lib/report-compliance";
-import { createServerClient } from "@/lib/supabase/server";
-import type { CreateReportInput } from "@/types/emissions-report";
+import type { CreateReportInput, ReportStatus } from "@/types/emissions-report";
 import { formatReportPeriod } from "@/types/emissions-report";
 
 export async function GET() {
-  const supabase = createServerClient();
+  const result = await getApiContext();
+  if (!result.ok) return result.response;
 
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("emissions_reports")
-      .select("*")
-      .order("created_at", { ascending: false });
+  const { supabase, organizationId } = result.context;
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  const { data, error } = await supabase
+    .from("emissions_reports")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
 
-    return NextResponse.json({
-      reports: (data ?? []).map(mapRowToReport),
-      source: "supabase",
-    });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({
-    reports: listMemoryReports(),
-    source: "memory",
+    reports: (data ?? []).map(mapRowToReport),
+    source: "supabase",
   });
 }
 
 export async function POST(request: Request) {
+  const result = await getApiContext();
+  if (!result.ok) return result.response;
+
+  const { supabase, organizationId } = result.context;
+
   let body: CreateReportInput;
 
   try {
@@ -62,22 +62,15 @@ export async function POST(request: Request) {
   }
 
   const summary = summarizeReportFromImports(selectedImports, etsPrice);
-  const existingReports = listMemoryReports().filter(
-    (r) => r.year === year && r.quarter === quarter
-  );
-  const supabase = createServerClient();
 
-  let sequence = existingReports.length + 1;
+  const { count } = await supabase
+    .from("emissions_reports")
+    .select("*", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("year", year)
+    .eq("quarter", quarter);
 
-  if (supabase) {
-    const { count } = await supabase
-      .from("emissions_reports")
-      .select("*", { count: "exact", head: true })
-      .eq("year", year)
-      .eq("quarter", quarter);
-
-    sequence = (count ?? 0) + 1;
-  }
+  const sequence = (count ?? 0) + 1;
 
   const report = {
     id: crypto.randomUUID(),
@@ -96,20 +89,57 @@ export async function POST(request: Request) {
     createdAt: new Date().toISOString(),
   };
 
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("emissions_reports")
-      .insert(mapReportToInsert(report) as never)
-      .select("*")
-      .single();
+  const { data, error } = await supabase
+    .from("emissions_reports")
+    .insert(mapReportToInsert(report, organizationId) as never)
+    .select("*")
+    .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ report: mapRowToReport(data), source: "supabase" });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  addMemoryReport(report);
-  return NextResponse.json({ report, source: "memory" });
+  return NextResponse.json({ report: mapRowToReport(data), source: "supabase" });
+}
+
+export async function PATCH(request: Request) {
+  const result = await getApiContext();
+  if (!result.ok) return result.response;
+
+  const { supabase, organizationId } = result.context;
+
+  let body: { id: string; status: ReportStatus };
+
+  try {
+    body = (await request.json()) as { id: string; status: ReportStatus };
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  if (!body.id || !body.status) {
+    return NextResponse.json({ error: "Missing report id or status." }, { status: 400 });
+  }
+
+  const allowed: ReportStatus[] = ["draft", "submitted", "accepted"];
+  if (!allowed.includes(body.status)) {
+    return NextResponse.json({ error: "Invalid report status." }, { status: 400 });
+  }
+
+  const { data, error } = await supabase
+    .from("emissions_reports")
+    .update({ status: body.status } as never)
+    .eq("id", body.id)
+    .eq("organization_id", organizationId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!data) {
+    return NextResponse.json({ error: "Report not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({ report: mapRowToReport(data), source: "supabase" });
 }

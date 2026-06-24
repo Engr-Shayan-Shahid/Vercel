@@ -3,14 +3,8 @@ import type { Database } from "@/types/database";
 
 type ImportRow = Database["public"]["Tables"]["import_logs"]["Row"];
 
-const memoryStore: ImportRecord[] = [];
-
 export function mapRowToImport(row: ImportRow): ImportRecord {
   const id = row.id != null ? String(row.id).trim() : "";
-
-  if (!id) {
-    console.error("Supabase row missing id field:", row);
-  }
 
   return {
     id,
@@ -26,15 +20,18 @@ export function mapRowToImport(row: ImportRow): ImportRecord {
     etsPrice: Number(row.ets_price),
     taxLiability: Number(row.tax_liability),
     proofOfPaymentFileName: row.proof_of_payment_file_name ?? undefined,
+    proofOfPaymentStoragePath: row.proof_of_payment_storage_path ?? undefined,
     createdAt: row.created_at,
   };
 }
 
 export function mapImportToInsert(
-  record: ImportRecord
+  record: ImportRecord,
+  organizationId: string
 ): Database["public"]["Tables"]["import_logs"]["Insert"] {
   return {
     id: record.id,
+    organization_id: organizationId,
     material_type: record.materialType,
     mass: record.mass,
     origin_country: record.originCountry,
@@ -47,6 +44,7 @@ export function mapImportToInsert(
     ets_price: record.etsPrice,
     tax_liability: record.taxLiability,
     proof_of_payment_file_name: record.proofOfPaymentFileName ?? null,
+    proof_of_payment_storage_path: record.proofOfPaymentStoragePath ?? null,
     created_at: record.createdAt,
   };
 }
@@ -67,34 +65,10 @@ export function mapImportToUpdate(
     ets_price: record.etsPrice,
     tax_liability: record.taxLiability,
     proof_of_payment_file_name: record.proofOfPaymentFileName ?? null,
+    proof_of_payment_storage_path: record.proofOfPaymentStoragePath ?? null,
   };
 }
 
-export function listMemoryImports(): ImportRecord[] {
-  return [...memoryStore].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-}
-
-export function addMemoryImport(record: ImportRecord): ImportRecord {
-  memoryStore.unshift(record);
-  return record;
-}
-
-export function updateMemoryImport(record: ImportRecord): ImportRecord | null {
-  const index = memoryStore.findIndex((item) => item.id === record.id);
-  if (index === -1) return null;
-  memoryStore[index] = record;
-  return record;
-}
-
-export function deleteMemoryImport(id: string): boolean {
-  const index = memoryStore.findIndex((item) => item.id === id);
-  if (index === -1) return false;
-  memoryStore.splice(index, 1);
-  return true;
-}
-
-export function getMemoryImport(id: string): ImportRecord | undefined {
-  return memoryStore.find((item) => item.id === id);
+export function generateReportId(year: number, quarter: string, sequence: number): string {
+  return `RPT-${year}-${quarter}-${String(sequence).padStart(3, "0")}`;
 }
