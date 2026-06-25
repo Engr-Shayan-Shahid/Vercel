@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getApiContext } from "@/lib/auth/api-context";
+import { requireImporterContext } from "@/lib/auth/api-context";
 import {
   mapImportToInsert,
   mapRowToImport,
@@ -8,7 +8,7 @@ import {
 import type { ImportRecord } from "@/types/import-record";
 
 export async function GET() {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;
@@ -30,7 +30,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;

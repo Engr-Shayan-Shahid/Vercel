@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getApiContext } from "@/lib/auth/api-context";
+import { requireImporterContext } from "@/lib/auth/api-context";
 import {
   mapImportToUpdate,
   mapRowToImport,
@@ -12,7 +12,7 @@ interface RouteContext {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;
@@ -56,7 +56,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;

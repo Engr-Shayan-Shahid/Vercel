@@ -1,3 +1,4 @@
--- CBAMVault Supabase schema (MVP)
--- See supabase/migrations/20260625000000_mvp_schema.sql for migration history.
--- Run the migration file in Supabase SQL Editor or via: supabase db push
+-- CBAMVault Supabase schema
+-- Migrations (run in order in Supabase SQL Editor or via: supabase db push):
+--   1. supabase/migrations/20260625000000_mvp_schema.sql
+--   2. supabase/migrations/20260626000000_bridge_schema.sql

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,13 +14,15 @@ export function UserMenu() {
   const router = useRouter();
   const { settings } = useUserSettings();
 
+  const accountType = settings.accountType ?? "importer";
+
   async function handleLogout() {
     try {
       const supabase = createBrowserClient();
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       toast.success("Signed out.");
-      router.push("/login");
+      router.push(`/login?role=${accountType}`);
       router.refresh();
     } catch (error) {
       toast.error("Sign out failed", {
@@ -31,13 +33,14 @@ export function UserMenu() {
 
   return (
     <div className="flex items-center gap-2 sm:gap-3">
-      <div className="hidden text-right sm:block">
+      <div className="hidden flex-col items-end text-right sm:flex">
         <p className="text-sm font-medium leading-none text-foreground">
           {settings.complianceOfficerName || settings.email || "User"}
         </p>
-        <p className="mt-1 max-w-[180px] truncate text-[11px] text-muted-foreground">
-          {settings.email || "Compliance Officer"}
-        </p>
+        <div className="mt-1 flex items-center gap-1.5">
+          <Building2 className="h-3 w-3 text-primary" />
+          <span className="text-[11px] text-primary/80">Importer</span>
+        </div>
       </div>
       <Avatar>
         <AvatarFallback>

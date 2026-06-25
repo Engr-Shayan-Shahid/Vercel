@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getApiContext } from "@/lib/auth/api-context";
+import { requireImporterContext } from "@/lib/auth/api-context";
 import type { Database } from "@/types/database";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -12,7 +12,7 @@ type ImportProofRow = Pick<
 >;
 
 export async function POST(request: Request) {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;

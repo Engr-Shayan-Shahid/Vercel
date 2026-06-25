@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { AccountType, OrgType } from "@/types/shipment-request";
+
 export const EORI_REGEX = /^[A-Za-z0-9]{17}$/;
 
 export const profileSettingsSchema = z.object({
@@ -50,6 +52,8 @@ export type UserSettings = z.infer<typeof userSettingsSchema> & {
   id?: string;
   userId?: string;
   organizationId?: string;
+  accountType?: AccountType;
+  orgType?: OrgType;
   updatedAt?: string;
 };
 

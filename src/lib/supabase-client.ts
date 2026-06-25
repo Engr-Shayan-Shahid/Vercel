@@ -6,6 +6,8 @@ import {
   type UserSettings,
 } from "@/lib/settings-schema";
 import type { Database } from "@/types/database";
+import type { AccountType, OrgType } from "@/types/shipment-request";
+import { isAccountType, isOrgType } from "@/types/shipment-request";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
@@ -22,10 +24,21 @@ export function isSupabaseConfigured(): boolean {
 }
 
 function mapRowsToSettings(profile: ProfileRow, organization: OrganizationRow): UserSettings {
+  const accountType: AccountType =
+    profile.account_type && isAccountType(profile.account_type)
+      ? profile.account_type
+      : "importer";
+  const orgType: OrgType =
+    organization.org_type && isOrgType(organization.org_type)
+      ? organization.org_type
+      : "importer";
+
   return {
     id: profile.id,
     userId: profile.user_id,
     organizationId: organization.id,
+    accountType,
+    orgType,
     complianceOfficerName: profile.compliance_officer_name,
     email: profile.email,
     companyLegalName: organization.name,

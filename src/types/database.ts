@@ -15,6 +15,7 @@ export interface Database {
           name: string;
           eori_number: string;
           vat_tax_id: string;
+          org_type: string;
           created_at: string;
         };
         Insert: {
@@ -22,6 +23,7 @@ export interface Database {
           name?: string;
           eori_number?: string;
           vat_tax_id?: string;
+          org_type?: string;
           created_at?: string;
         };
         Update: {
@@ -29,6 +31,7 @@ export interface Database {
           name?: string;
           eori_number?: string;
           vat_tax_id?: string;
+          org_type?: string;
           created_at?: string;
         };
       };
@@ -49,6 +52,103 @@ export interface Database {
           organization_id?: string;
           user_id?: string;
           role?: string;
+          created_at?: string;
+        };
+      };
+      invitations: {
+        Row: {
+          id: string;
+          importer_org_id: string;
+          email: string;
+          token: string;
+          status: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          importer_org_id: string;
+          email: string;
+          token: string;
+          status?: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          importer_org_id?: string;
+          email?: string;
+          token?: string;
+          status?: string;
+          expires_at?: string;
+          created_at?: string;
+        };
+      };
+      shipment_requests: {
+        Row: {
+          id: string;
+          importer_org_id: string;
+          exporter_org_id: string | null;
+          invitation_id: string | null;
+          exporter_email: string;
+          material_type: string;
+          mass: number;
+          origin_country: string;
+          cn_code: string | null;
+          reference_number: string | null;
+          notes: string | null;
+          emission_factor: number | null;
+          direct_emissions: number | null;
+          indirect_emissions: number | null;
+          submission_notes: string | null;
+          status: string;
+          submitted_at: string | null;
+          accepted_at: string | null;
+          import_log_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          importer_org_id: string;
+          exporter_org_id?: string | null;
+          invitation_id?: string | null;
+          exporter_email: string;
+          material_type: string;
+          mass: number;
+          origin_country: string;
+          cn_code?: string | null;
+          reference_number?: string | null;
+          notes?: string | null;
+          emission_factor?: number | null;
+          direct_emissions?: number | null;
+          indirect_emissions?: number | null;
+          submission_notes?: string | null;
+          status?: string;
+          submitted_at?: string | null;
+          accepted_at?: string | null;
+          import_log_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          importer_org_id?: string;
+          exporter_org_id?: string | null;
+          invitation_id?: string | null;
+          exporter_email?: string;
+          material_type?: string;
+          mass?: number;
+          origin_country?: string;
+          cn_code?: string | null;
+          reference_number?: string | null;
+          notes?: string | null;
+          emission_factor?: number | null;
+          direct_emissions?: number | null;
+          indirect_emissions?: number | null;
+          submission_notes?: string | null;
+          status?: string;
+          submitted_at?: string | null;
+          accepted_at?: string | null;
+          import_log_id?: string | null;
           created_at?: string;
         };
       };
@@ -167,6 +267,7 @@ export interface Database {
           user_id: string;
           compliance_officer_name: string;
           email: string;
+          account_type: string;
           new_eu_regulation_alerts: boolean;
           quarterly_report_reminders: boolean;
           security_alerts: boolean;
@@ -177,6 +278,7 @@ export interface Database {
           user_id: string;
           compliance_officer_name?: string;
           email?: string;
+          account_type?: string;
           new_eu_regulation_alerts?: boolean;
           quarterly_report_reminders?: boolean;
           security_alerts?: boolean;
@@ -187,6 +289,7 @@ export interface Database {
           user_id?: string;
           compliance_officer_name?: string;
           email?: string;
+          account_type?: string;
           new_eu_regulation_alerts?: boolean;
           quarterly_report_reminders?: boolean;
           security_alerts?: boolean;

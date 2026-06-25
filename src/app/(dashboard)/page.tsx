@@ -2,6 +2,7 @@ import { StatCards } from "@/components/dashboard/stat-cards";
 import { ComplianceSummary } from "@/components/dashboard/compliance-summary";
 import { ImportForm } from "@/components/imports/import-form";
 import { RecentImportsTable } from "@/components/imports/recent-imports-table";
+import { BridgeActivity } from "@/components/shipments/bridge-activity";
 
 export default function DashboardPage() {
   return (
@@ -16,6 +17,8 @@ export default function DashboardPage() {
       </div>
 
       <StatCards />
+
+      <BridgeActivity />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <ImportForm />

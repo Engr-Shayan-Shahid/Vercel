@@ -9,6 +9,8 @@ import {
   Settings,
   Shield,
   X,
+  Truck,
+  Building2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -18,7 +20,8 @@ const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Import Logs", href: "/import-logs", icon: FileText },
   { label: "Emissions Reports", href: "/emissions-reports", icon: BarChart3 },
-  { label: "User Settings", href: "/settings", icon: Settings },
+  { label: "Shipments", href: "/shipments", icon: Truck },
+  { label: "Settings", href: "/settings", icon: Settings },
 ] as const;
 
 interface SidebarProps {
@@ -107,13 +110,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           })}
         </nav>
 
-        {/* Footer */}
+        {/* Footer — Role badge */}
         <div className="border-t border-sidebar-border p-4">
-          <div className="rounded-lg border border-border bg-charcoal/50 px-4 py-3">
-            <p className="text-xs font-medium text-foreground">CBAM Phase 1</p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              EU Carbon Border Adjustment
-            </p>
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-charcoal/50 px-4 py-3">
+            <Building2 className="h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <p className="text-xs font-medium text-foreground">Importer workspace</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                EU Carbon Border Adjustment
+              </p>
+            </div>
           </div>
         </div>
       </aside>

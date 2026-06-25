@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getApiContext } from "@/lib/auth/api-context";
+import { requireImporterContext } from "@/lib/auth/api-context";
 import { generateReportId } from "@/lib/imports-store";
 import {
   mapReportToInsert,
@@ -11,7 +11,7 @@ import type { CreateReportInput, ReportStatus } from "@/types/emissions-report";
 import { formatReportPeriod } from "@/types/emissions-report";
 
 export async function GET() {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;
@@ -33,7 +33,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const result = await getApiContext();
+  const result = await requireImporterContext();
   if (!result.ok) return result.response;
 
   const { supabase, organizationId } = result.context;

@@ -4,19 +4,41 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
+import type { AccountType, OrgType } from "@/types/shipment-request";
+import { isAccountType, isOrgType } from "@/types/shipment-request";
 
 type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export interface ApiContext {
   supabase: SupabaseClient<Database>;
   user: User;
   organizationId: string;
   organization: OrganizationRow;
+  accountType: AccountType;
+  orgType: OrgType;
 }
 
 export type ApiContextResult =
   | { ok: true; context: ApiContext }
   | { ok: false; response: NextResponse };
+
+function resolveAccountType(profile: ProfileRow | null, organization: OrganizationRow): AccountType {
+  if (profile?.account_type && isAccountType(profile.account_type)) {
+    return profile.account_type;
+  }
+  if (organization.org_type && isOrgType(organization.org_type)) {
+    return organization.org_type;
+  }
+  return "importer";
+}
+
+function resolveOrgType(organization: OrganizationRow): OrgType {
+  if (organization.org_type && isOrgType(organization.org_type)) {
+    return organization.org_type;
+  }
+  return "importer";
+}
 
 export async function getApiContext(): Promise<ApiContextResult> {
   if (!isSupabaseConfigured()) {
@@ -103,6 +125,23 @@ export async function getApiContext(): Promise<ApiContextResult> {
     };
   }
 
+  const { data: profileRow, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: profileError.message }, { status: 500 }),
+    };
+  }
+
+  const profile = profileRow as ProfileRow | null;
+  const orgType = resolveOrgType(organization);
+  const accountType = resolveAccountType(profile, organization);
+
   return {
     ok: true,
     context: {
@@ -110,6 +149,42 @@ export async function getApiContext(): Promise<ApiContextResult> {
       user,
       organizationId: membership.organization_id,
       organization,
+      accountType,
+      orgType,
     },
   };
+}
+
+export async function requireImporterContext(): Promise<ApiContextResult> {
+  const result = await getApiContext();
+  if (!result.ok) return result;
+
+  if (result.context.orgType !== "importer") {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "This action requires an importer account." },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return result;
+}
+
+export async function requireExporterContext(): Promise<ApiContextResult> {
+  const result = await getApiContext();
+  if (!result.ok) return result;
+
+  if (result.context.orgType !== "exporter") {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "This action requires an exporter account." },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return result;
 }
