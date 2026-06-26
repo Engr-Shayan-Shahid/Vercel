@@ -13,6 +13,9 @@ import { sendSubmissionNotification } from "@/lib/email/send-submission-notifica
 import type { Database } from "@/types/database";
 
 type ShipmentRequestRow = Database["public"]["Tables"]["shipment_requests"]["Row"];
+type ShipmentRequestUpdate = Database["public"]["Tables"]["shipment_requests"]["Update"];
+type ImportLogInsert = Database["public"]["Tables"]["import_logs"]["Insert"];
+type ImportLogRow = Database["public"]["Tables"]["import_logs"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -108,16 +111,18 @@ export async function PATCH(
       // RLS will guard this anyway but double-check
     }
 
+    const submitUpdate: ShipmentRequestUpdate = {
+      emission_factor: emissionFactor,
+      direct_emissions: directEmissions ?? null,
+      indirect_emissions: indirectEmissions ?? null,
+      submission_notes: submissionNotes ?? null,
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+    };
+
     const { data: updated, error: updateError } = await supabase
       .from("shipment_requests")
-      .update({
-        emission_factor: emissionFactor,
-        direct_emissions: directEmissions ?? null,
-        indirect_emissions: indirectEmissions ?? null,
-        submission_notes: submissionNotes ?? null,
-        status: "submitted",
-        submitted_at: new Date().toISOString(),
-      } as never)
+      .update(submitUpdate)
       .eq("id", id)
       .select("*")
       .single();
@@ -234,13 +239,24 @@ export async function PATCH(
 
     const importLogId = crypto.randomUUID();
     const currentRequest = mapRowToShipmentRequest(typedRow);
-    const importRecord = buildImportFromShipment(currentRequest, importLogId);
-    const insertPayload = mapImportToInsert(importRecord, organizationId);
+
+    let importRecord;
+    try {
+      importRecord = buildImportFromShipment(currentRequest, importLogId);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Cannot build import record: emission factor is missing or zero.";
+      return NextResponse.json({ error: message }, { status: 409 });
+    }
+
+    const insertPayload: ImportLogInsert = mapImportToInsert(importRecord, organizationId);
 
     // Insert import log
     const { data: importLogData, error: importError } = await supabase
       .from("import_logs")
-      .insert(insertPayload as never)
+      .insert(insertPayload)
       .select("*")
       .single();
 
@@ -248,14 +264,16 @@ export async function PATCH(
       return NextResponse.json({ error: importError.message }, { status: 500 });
     }
 
+    const acceptUpdate: ShipmentRequestUpdate = {
+      status: "accepted",
+      accepted_at: new Date().toISOString(),
+      import_log_id: importLogId,
+    };
+
     // Update shipment request to accepted
     const { data: updated, error: updateError } = await supabase
       .from("shipment_requests")
-      .update({
-        status: "accepted",
-        accepted_at: new Date().toISOString(),
-        import_log_id: importLogId,
-      } as never)
+      .update(acceptUpdate)
       .eq("id", id)
       .select("*")
       .single();
@@ -266,7 +284,7 @@ export async function PATCH(
 
     return NextResponse.json({
       request: mapRowToShipmentRequest(updated as ShipmentRequestRow),
-      importLog: mapRowToImport(importLogData),
+      importLog: mapRowToImport(importLogData as ImportLogRow),
     });
   }
 
@@ -310,12 +328,14 @@ export async function PATCH(
       ? `${existingNotes ? existingNotes + "\n\n" : ""}Rejected: ${reason}`
       : existingNotes;
 
+    const rejectUpdate: ShipmentRequestUpdate = {
+      status: "rejected",
+      submission_notes: rejectionNote || null,
+    };
+
     const { data: updated, error: updateError } = await supabase
       .from("shipment_requests")
-      .update({
-        status: "rejected",
-        submission_notes: rejectionNote || null,
-      } as never)
+      .update(rejectUpdate)
       .eq("id", id)
       .select("*")
       .single();

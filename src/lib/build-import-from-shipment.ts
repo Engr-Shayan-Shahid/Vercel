@@ -10,7 +10,11 @@ export function buildImportFromShipment(
   request: ShipmentRequest,
   importLogId: string
 ): ImportRecord {
-  const emissionFactor = request.emissionFactor ?? 0;
+  if (request.emissionFactor == null || request.emissionFactor <= 0) {
+    throw new Error("Cannot build import record: emission factor is missing or zero.");
+  }
+
+  const emissionFactor = request.emissionFactor;
   const materialType = request.materialType as MaterialType;
 
   const result = calculateCBAMLiability({
@@ -25,6 +29,9 @@ export function buildImportFromShipment(
     materialType,
     mass: request.mass,
     originCountry: request.originCountry,
+    importDate: request.acceptedAt
+      ? request.acceptedAt.split("T")[0]
+      : new Date().toISOString().split("T")[0],
     emissionFactor,
     embeddedEmissions: result.embeddedEmissions,
     benchmark: result.benchmark,

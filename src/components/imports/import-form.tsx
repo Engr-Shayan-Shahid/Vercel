@@ -136,6 +136,21 @@ export function ImportForm() {
               </Select>
             </FieldGroup>
 
+            <FieldGroup label="Import Date" error={errors.importDate} htmlFor="importDate">
+              <Input
+                id="importDate"
+                type="date"
+                max={new Date().toISOString().split("T")[0]}
+                value={form.importDate}
+                onChange={(e) => updateField("importDate", e.target.value)}
+                aria-invalid={!!errors.importDate}
+                disabled={isLoading}
+                className={cn(
+                  errors.importDate && "border-destructive/50 focus-visible:ring-destructive/50"
+                )}
+              />
+            </FieldGroup>
+
             <FieldGroup label="Mass (Tonnes)" error={errors.mass} htmlFor="mass">
               <Input
                 id="mass"

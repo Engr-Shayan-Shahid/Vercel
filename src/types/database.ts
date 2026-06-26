@@ -34,6 +34,7 @@ export interface Database {
           org_type?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       organization_members: {
         Row: {
@@ -54,6 +55,22 @@ export interface Database {
           role?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey",
+            columns: ["organization_id"],
+            isOneToOne: false,
+            referencedRelation: "organizations",
+            referencedColumns: ["id"],
+          },
+          {
+            foreignKeyName: "organization_members_user_id_profiles_fkey",
+            columns: ["user_id"],
+            isOneToOne: true,
+            referencedRelation: "profiles",
+            referencedColumns: ["user_id"],
+          },
+        ];
       };
       invitations: {
         Row: {
@@ -83,6 +100,7 @@ export interface Database {
           expires_at?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       shipment_requests: {
         Row: {
@@ -151,6 +169,7 @@ export interface Database {
           import_log_id?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       emissions_reports: {
         Row: {
@@ -204,6 +223,7 @@ export interface Database {
           aggregated_rows?: Json;
           created_at?: string;
         };
+        Relationships: [];
       };
       import_logs: {
         Row: {
@@ -212,6 +232,7 @@ export interface Database {
           material_type: string;
           mass: number;
           origin_country: string;
+          import_date: string;
           emission_factor: number;
           embedded_emissions: number;
           benchmark: number;
@@ -230,6 +251,7 @@ export interface Database {
           material_type: string;
           mass: number;
           origin_country: string;
+          import_date: string;
           emission_factor: number;
           embedded_emissions: number;
           benchmark: number;
@@ -248,6 +270,7 @@ export interface Database {
           material_type?: string;
           mass?: number;
           origin_country?: string;
+          import_date?: string;
           emission_factor?: number;
           embedded_emissions?: number;
           benchmark?: number;
@@ -260,6 +283,7 @@ export interface Database {
           proof_of_payment_storage_path?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       profiles: {
         Row: {
@@ -295,11 +319,35 @@ export interface Database {
           security_alerts?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      user_exporter_org_ids: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
+      user_importer_org_ids: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
+      auth_user_email: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      user_organization_ids: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
 }
+
+export type TablesInsert<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Insert"];
+
+export type TablesUpdate<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Update"];

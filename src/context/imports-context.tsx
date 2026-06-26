@@ -92,6 +92,7 @@ function buildImportRecord(
     materialType: base.materialType,
     mass: overrides.mass ?? base.mass ?? 0,
     originCountry: overrides.originCountry ?? base.originCountry ?? "",
+    importDate: overrides.importDate ?? base.importDate ?? new Date().toISOString().split("T")[0],
     emissionFactor: overrides.emissionFactor ?? base.emissionFactor ?? 0,
     embeddedEmissions: calculation.embeddedEmissions,
     benchmark: calculation.benchmark,
@@ -200,6 +201,7 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
           {
             mass: Number(input.mass),
             originCountry: input.originCountry.trim(),
+            importDate: input.importDate.trim(),
             emissionFactor: Number(input.emissionFactor),
             proofOfPaymentFileName: input.proofOfPayment?.name,
           }

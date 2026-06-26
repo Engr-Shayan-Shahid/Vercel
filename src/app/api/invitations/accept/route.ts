@@ -4,6 +4,8 @@ import { requireExporterContext } from "@/lib/auth/api-context";
 import type { Database } from "@/types/database";
 
 type InvitationRow = Database["public"]["Tables"]["invitations"]["Row"];
+type InvitationUpdate = Database["public"]["Tables"]["invitations"]["Update"];
+type ShipmentRequestUpdate = Database["public"]["Tables"]["shipment_requests"]["Update"];
 
 export async function POST(request: Request) {
   const result = await requireExporterContext();
@@ -63,9 +65,11 @@ export async function POST(request: Request) {
   }
 
   // Mark invitation accepted
+  const invitationUpdate: InvitationUpdate = { status: "accepted" };
+
   const { error: updateInvitationError } = await supabase
     .from("invitations")
-    .update({ status: "accepted" } as never)
+    .update(invitationUpdate)
     .eq("id", invitation.id);
 
   if (updateInvitationError) {
@@ -73,9 +77,11 @@ export async function POST(request: Request) {
   }
 
   // Link shipment requests to exporter org
+  const shipmentRequestUpdate: ShipmentRequestUpdate = { exporter_org_id: organizationId };
+
   const { data: updatedRequests, error: updateRequestsError } = await supabase
     .from("shipment_requests")
-    .update({ exporter_org_id: organizationId } as never)
+    .update(shipmentRequestUpdate)
     .eq("invitation_id", invitation.id)
     .select("id");
 

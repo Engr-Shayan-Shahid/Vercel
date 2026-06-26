@@ -7,7 +7,9 @@ import { sendInvitationEmail } from "@/lib/email/send-invitation";
 import type { Database } from "@/types/database";
 
 type InvitationRow = Database["public"]["Tables"]["invitations"]["Row"];
+type InvitationInsert = Database["public"]["Tables"]["invitations"]["Insert"];
 type ShipmentRequestRow = Database["public"]["Tables"]["shipment_requests"]["Row"];
+type ShipmentRequestInsert = Database["public"]["Tables"]["shipment_requests"]["Insert"];
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const INVITE_EXPIRES_DAYS = 14;
@@ -73,15 +75,17 @@ export async function POST(request: Request) {
   const expiresAt = new Date(Date.now() + INVITE_EXPIRES_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   // Insert invitation first
+  const invitationInsert: InvitationInsert = {
+    importer_org_id: organizationId,
+    email: exporterEmail,
+    token,
+    status: "pending",
+    expires_at: expiresAt,
+  };
+
   const { data: rawInvitationData, error: invitationError } = await supabase
     .from("invitations")
-    .insert({
-      importer_org_id: organizationId,
-      email: exporterEmail,
-      token,
-      status: "pending",
-      expires_at: expiresAt,
-    } as never)
+    .insert(invitationInsert)
     .select("*")
     .single();
 
@@ -89,23 +93,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: invitationError.message }, { status: 500 });
   }
 
-  const invitationData = rawInvitationData as unknown as InvitationRow;
+  const invitationData = rawInvitationData as InvitationRow;
 
   // Insert shipment request linked to invitation
+  const shipmentRequestInsert: ShipmentRequestInsert = {
+    importer_org_id: organizationId,
+    invitation_id: invitationData.id,
+    exporter_email: exporterEmail,
+    material_type: materialType,
+    mass,
+    origin_country: originCountry,
+    cn_code: cnCode ?? null,
+    reference_number: referenceNumber ?? null,
+    notes: notes ?? null,
+    status: "pending_exporter",
+  };
+
   const { data: rawRequestData, error: requestError } = await supabase
     .from("shipment_requests")
-    .insert({
-      importer_org_id: organizationId,
-      invitation_id: invitationData.id,
-      exporter_email: exporterEmail,
-      material_type: materialType,
-      mass,
-      origin_country: originCountry,
-      cn_code: cnCode ?? null,
-      reference_number: referenceNumber ?? null,
-      notes: notes ?? null,
-      status: "pending_exporter",
-    } as never)
+    .insert(shipmentRequestInsert)
     .select("*")
     .single();
 
@@ -115,7 +121,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: requestError.message }, { status: 500 });
   }
 
-  const requestData = rawRequestData as unknown as ShipmentRequestRow;
+  const requestData = rawRequestData as ShipmentRequestRow;
 
   const inviteLink = `${APP_URL}/invite/${token}`;
   const importerOrgName =

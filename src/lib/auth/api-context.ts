@@ -10,6 +10,12 @@ import { isAccountType, isOrgType } from "@/types/shipment-request";
 type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
+type MembershipContextRow = {
+  organization_id: string;
+  organizations: OrganizationRow | null;
+  profiles: Pick<ProfileRow, "account_type" | "email">;
+};
+
 export interface ApiContext {
   supabase: SupabaseClient<Database>;
   user: User;
@@ -23,7 +29,10 @@ export type ApiContextResult =
   | { ok: true; context: ApiContext }
   | { ok: false; response: NextResponse };
 
-function resolveAccountType(profile: ProfileRow | null, organization: OrganizationRow): AccountType {
+function resolveAccountType(
+  profile: Pick<ProfileRow, "account_type"> | null,
+  organization: OrganizationRow
+): AccountType {
   if (profile?.account_type && isAccountType(profile.account_type)) {
     return profile.account_type;
   }
@@ -77,7 +86,13 @@ export async function getApiContext(): Promise<ApiContextResult> {
 
   const { data: membershipRow, error: membershipError } = await supabase
     .from("organization_members")
-    .select("organization_id")
+    .select(
+      `
+      organization_id,
+      organizations (*),
+      profiles!inner (account_type, email)
+    `
+    )
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -88,7 +103,7 @@ export async function getApiContext(): Promise<ApiContextResult> {
     };
   }
 
-  const membership = membershipRow as { organization_id: string } | null;
+  const membership = membershipRow as MembershipContextRow | null;
 
   if (!membership?.organization_id) {
     return {
@@ -103,20 +118,7 @@ export async function getApiContext(): Promise<ApiContextResult> {
     };
   }
 
-  const { data: organizationRow, error: organizationError } = await supabase
-    .from("organizations")
-    .select("*")
-    .eq("id", membership.organization_id)
-    .maybeSingle();
-
-  if (organizationError) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: organizationError.message }, { status: 500 }),
-    };
-  }
-
-  const organization = organizationRow as OrganizationRow | null;
+  const organization = membership.organizations;
 
   if (!organization) {
     return {
@@ -125,20 +127,7 @@ export async function getApiContext(): Promise<ApiContextResult> {
     };
   }
 
-  const { data: profileRow, error: profileError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (profileError) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: profileError.message }, { status: 500 }),
-    };
-  }
-
-  const profile = profileRow as ProfileRow | null;
+  const profile = membership.profiles;
   const orgType = resolveOrgType(organization);
   const accountType = resolveAccountType(profile, organization);
 

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { createBrowserClient } from "@/lib/supabase/client";
-import { getDefaultHomePath, type AccountType } from "@/lib/auth/account-type";
+import { getDefaultHomePath, clearRoleCookieClient, type AccountType } from "@/lib/auth/account-type";
 
 interface AuthFormProps {
   mode: "login" | "signup";
@@ -84,6 +84,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         if (storedRole && storedRole !== accountType) {
           await supabase.auth.signOut();
+          clearRoleCookieClient();
           toast.error("Wrong account type selected", {
             description: `This account is registered as ${storedRole === "exporter" ? "an Exporter" : "an Importer"}. Please select the correct role.`,
           });

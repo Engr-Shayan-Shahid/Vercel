@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .from("import_logs")
-    .insert(mapImportToInsert(record, organizationId) as never)
+    .insert(mapImportToInsert(record, organizationId))
     .select("*")
     .single();
 

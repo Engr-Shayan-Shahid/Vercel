@@ -1,5 +1,12 @@
 export type AccountType = "importer" | "exporter";
 
+export const CBAM_ROLE_COOKIE = "cbam_role";
+
+export function clearRoleCookieClient(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${CBAM_ROLE_COOKIE}=; Max-Age=0; path=/; SameSite=Lax`;
+}
+
 export function getDefaultHomePath(accountType: AccountType | null | undefined): string {
   return accountType === "exporter" ? "/exporter" : "/";
 }

@@ -19,7 +19,7 @@ export function ComplianceNotices() {
         variant="info"
         icon={Info}
         title={`ETS price: €${DEFAULT_ETS_PRICE}/tCO₂e (configurable)`}
-        message="EU ETS prices update quarterly in 2026 and weekly from 2027. Set CBAM_ETS_PRICE in your environment or refresh monthly until the live feed is connected."
+        message="EU ETS prices update quarterly in 2026 and weekly from 2027. Set CBAM_ETS_PRICE in your environment and update it quarterly to match the current EU ETS market price."
       />
       <Notice
         variant="info"

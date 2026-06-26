@@ -89,6 +89,31 @@ export function formatReportPeriod(year: number, quarter: ReportQuarter): string
   return `${year} ${quarter}`;
 }
 
+function parseImportDateUtc(importDate: string): Date {
+  const [year, month, day] = importDate.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+export function getReportQuarterFromImportDate(importDate: string): ReportQuarter {
+  const month = parseImportDateUtc(importDate).getUTCMonth();
+
+  if (month <= 2) return "Q1";
+  if (month <= 5) return "Q2";
+  if (month <= 8) return "Q3";
+  return "Q4";
+}
+
+export function getReportYearFromImportDate(importDate: string): number {
+  return parseImportDateUtc(importDate).getUTCFullYear();
+}
+
+/** Returns the CBAM reporting period for an import date, e.g. "Q1 2026". */
+export function getReportingPeriodFromImportDate(importDate: string): string {
+  const quarter = getReportQuarterFromImportDate(importDate);
+  const year = getReportYearFromImportDate(importDate);
+  return `${quarter} ${year}`;
+}
+
 export function getQuarterDateRange(
   year: number,
   quarter: ReportQuarter
@@ -113,6 +138,6 @@ export function importMatchesPeriod(
   quarter: ReportQuarter
 ): boolean {
   const { start, end } = getQuarterDateRange(year, quarter);
-  const createdAt = new Date(importRecord.createdAt);
-  return createdAt >= start && createdAt <= end;
+  const importDate = parseImportDateUtc(importRecord.importDate);
+  return importDate >= start && importDate <= end;
 }

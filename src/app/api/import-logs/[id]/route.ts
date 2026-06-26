@@ -38,7 +38,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data, error } = await supabase
     .from("import_logs")
-    .update(mapImportToUpdate(record) as never)
+    .update(mapImportToUpdate(record))
     .eq("id", id)
     .eq("organization_id", organizationId)
     .select("*")

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserSettings } from "@/context/user-settings-context";
 import { getInitials } from "@/lib/settings-schema";
+import { clearRoleCookieClient } from "@/lib/auth/account-type";
 import { createBrowserClient } from "@/lib/supabase/client";
 
 export function ExporterUserMenu() {
@@ -19,6 +20,7 @@ export function ExporterUserMenu() {
       const supabase = createBrowserClient();
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      clearRoleCookieClient();
       toast.success("Signed out.");
       router.push("/login?role=exporter");
       router.refresh();

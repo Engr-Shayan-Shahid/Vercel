@@ -22,11 +22,31 @@ export async function GET(
       admin_not_configured: 503,
     };
 
+    const errorMessages: Partial<Record<string, string>> = {
+      expired: "This invitation has expired.",
+    };
+
     return NextResponse.json(
-      { error: result.error },
+      { error: errorMessages[result.error] ?? result.error },
       { status: statusMap[result.error] ?? 404 }
     );
   }
 
-  return NextResponse.json({ invitation: result.data });
+  const invitation = result.data;
+
+  if (new Date(invitation.expiresAt) < new Date()) {
+    return NextResponse.json(
+      { error: "This invitation has expired." },
+      { status: 410 }
+    );
+  }
+
+  if (invitation.status !== "pending") {
+    return NextResponse.json(
+      { error: "This invitation has already been used." },
+      { status: 409 }
+    );
+  }
+
+  return NextResponse.json({ invitation });
 }

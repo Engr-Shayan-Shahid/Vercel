@@ -17,8 +17,8 @@ export const MATERIAL_BENCHMARKS: Record<MaterialType, number> = {
   Fertilizer: 2.05,
 };
 
-/** Fallback EU ETS price (€/tCO₂e). Override via env or monthly update. */
-export const DEFAULT_ETS_PRICE = 80;
+/** Fallback EU ETS price (€/tCO₂e). Override via CBAM_ETS_PRICE env variable. */
+export const DEFAULT_ETS_PRICE = 65;
 
 export const PUNITIVE_DEFAULTS_WARNING =
   "Default values are punitive. Use verified supplier data to lower your embedded emissions (Eᵢ) and reduce liability.";
