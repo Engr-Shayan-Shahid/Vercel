@@ -177,3 +177,44 @@ export async function requireExporterContext(): Promise<ApiContextResult> {
 
   return result;
 }
+
+export async function getMembershipRole(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  organizationId: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  return (data as { role?: string } | null)?.role ?? null;
+}
+
+export async function requireOwnerContext(): Promise<
+  | { ok: true; context: ApiContext & { role: "owner" } }
+  | { ok: false; response: NextResponse }
+> {
+  const result = await requireImporterContext();
+  if (!result.ok) return result;
+
+  const role = await getMembershipRole(
+    result.context.supabase,
+    result.context.user.id,
+    result.context.organizationId
+  );
+
+  if (role !== "owner") {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "This action requires organization owner permissions." },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return { ok: true, context: { ...result.context, role: "owner" } };
+}

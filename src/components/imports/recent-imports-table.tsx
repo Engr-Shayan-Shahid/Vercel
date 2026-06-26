@@ -7,6 +7,10 @@ import { CalculationDetails } from "@/components/imports/calculation-details";
 import { DeleteImportDialog } from "@/components/imports/delete-import-dialog";
 import { EditImportModal } from "@/components/imports/edit-import-modal";
 import { ProofViewerModal } from "@/components/imports/proof-viewer-modal";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorCard } from "@/components/ui/error-card";
+import { SectionErrorBoundary } from "@/components/ui/section-error-boundary";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,7 +30,7 @@ function getRecordId(record: ImportRecord): string | null {
 }
 
 export function RecentImportsTable() {
-  const { imports, isLoading, error, getProofUrl } = useImports();
+  const { imports, isLoading, error, getProofUrl, refreshImports } = useImports();
   const [proofRecord, setProofRecord] = useState<ImportRecord | null>(null);
   const [proofUrl, setProofUrl] = useState<string | undefined>();
   const [proofLoading, setProofLoading] = useState(false);
@@ -75,19 +79,22 @@ export function RecentImportsTable() {
           </p>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          {isLoading ? (
-            <LoadingState />
-          ) : imports.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <TooltipProvider delayDuration={150}>
-              <div className="overflow-x-auto rounded-lg border border-border/60">
-                <table className="w-full min-w-[1100px] text-left text-sm">
+          <SectionErrorBoundary title="Import logs failed to load">
+            {error ? (
+              <ErrorCard message={error} onRetry={() => void refreshImports()} />
+            ) : isLoading ? (
+              <TableSkeleton columns={8} rows={6} />
+            ) : imports.length === 0 ? (
+              <EmptyState
+                icon={PackageOpen}
+                title="No imports yet"
+                description="Add your first import to calculate your CBAM liability."
+                action={{ label: "Add first import", href: "/import-logs" }}
+              />
+            ) : (
+              <TooltipProvider delayDuration={150}>
+                <div className="overflow-x-auto rounded-lg border border-border/60">
+                  <table className="w-full min-w-[1100px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-border/60 bg-deep-black/60">
                       <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -194,7 +201,8 @@ export function RecentImportsTable() {
                 </table>
               </div>
             </TooltipProvider>
-          )}
+            )}
+          </SectionErrorBoundary>
         </CardContent>
       </Card>
 
@@ -227,27 +235,5 @@ export function RecentImportsTable() {
         }}
       />
     </>
-  );
-}
-
-function LoadingState() {
-  return (
-    <div className="flex items-center justify-center rounded-lg border border-border/60 bg-deep-black/40 px-6 py-12">
-      <p className="text-sm text-muted-foreground">Loading import logs…</p>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/60 bg-deep-black/40 px-6 py-12 text-center">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/20">
-        <PackageOpen className="h-5 w-5 text-primary" />
-      </div>
-      <p className="text-sm font-medium text-foreground">No import records yet</p>
-      <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-        Submit an import to run the CBAM calculation engine. Results appear here instantly.
-      </p>
-    </div>
   );
 }

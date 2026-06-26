@@ -5,6 +5,11 @@ import {
   mapImportToInsert,
   mapRowToImport,
 } from "@/lib/imports-store";
+import { logAuditEvent, AuditAction } from "@/lib/audit-logger";
+import {
+  createNotification,
+  formatImportRef,
+} from "@/lib/notification-helpers";
 import type { ImportRecord } from "@/types/import-record";
 
 export async function GET() {
@@ -56,6 +61,30 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await logAuditEvent(
+    supabase,
+    organizationId,
+    result.context.user.id,
+    AuditAction.IMPORT_CREATED,
+    "import_log",
+    data.id,
+    null,
+    { materialType: data.material_type, mass: data.mass, originCountry: data.origin_country }
+  );
+
+  const importRef = formatImportRef(data.id);
+  await createNotification(
+    supabase,
+    organizationId,
+    "missing_supplier_data",
+    `Import ${importRef} is missing supplier data`,
+    {
+      dedup_key: `missing-supplier-${data.id}`,
+      import_id: data.id,
+      import_ref: importRef,
+    }
+  );
 
   return NextResponse.json({ import: mapRowToImport(data), source: "supabase" });
 }

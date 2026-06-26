@@ -1,4 +1,5 @@
 import { calculateCBAMLiability } from "@/lib/cbam-calculator";
+import { getDefaultCnCodeForMaterial } from "@/lib/cn-codes";
 import type { ShipmentRequest } from "@/types/shipment-request";
 import type { ImportRecord, MaterialType } from "@/types/import-record";
 
@@ -27,6 +28,7 @@ export function buildImportFromShipment(
   return {
     id: importLogId,
     materialType,
+    cnCode: request.cnCode?.trim() || getDefaultCnCodeForMaterial(materialType),
     mass: request.mass,
     originCountry: request.originCountry,
     importDate: request.acceptedAt

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { calculateCBAMLiability, CBAMCalculationError } from "@/lib/cbam-calculator";
+import { getEtsPriceForOrganization } from "@/lib/ets-price-server";
 import { getEtsPrice } from "@/lib/ets-price";
 import { createClient } from "@/lib/supabase/server";
 import { MATERIAL_TYPES, type MaterialType } from "@/types/import-record";
@@ -56,7 +57,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid material type." }, { status: 400 });
     }
 
-    const etsPrice = await getEtsPrice();
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const organizationId = (membership as { organization_id?: string } | null)?.organization_id;
+    const etsPrice = organizationId
+      ? await getEtsPriceForOrganization(organizationId)
+      : await getEtsPrice();
+
 
     const result = calculateCBAMLiability({
       materialType: materialType as MaterialType,

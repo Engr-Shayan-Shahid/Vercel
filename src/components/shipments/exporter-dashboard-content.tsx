@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { ArrowRight, SendHorizonal } from "lucide-react";
 
+import { ExporterRequestsEmptyState } from "@/components/shipments/exporter-requests-empty-state";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExporterRequestStats } from "@/components/shipments/exporter-request-stats";
@@ -65,6 +67,8 @@ export function ExporterDashboardContent() {
                 Retry
               </button>
             </div>
+          ) : requests.length === 0 ? (
+            <ExporterRequestsEmptyState />
           ) : (
             <ShipmentRequestsTable requests={recent} variant="exporter" />
           )}

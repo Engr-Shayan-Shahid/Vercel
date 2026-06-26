@@ -150,6 +150,7 @@ export function ShipmentRequestForm({ onCreated }: ShipmentRequestFormProps) {
     if (!inviteLink) return;
     await navigator.clipboard.writeText(inviteLink);
     setCopied(true);
+    toast.success("Link copied", { description: "Invite link copied to clipboard." });
     setTimeout(() => setCopied(false), 2000);
   }
 

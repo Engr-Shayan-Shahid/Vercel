@@ -11,6 +11,8 @@ type ImportProofRow = Pick<
   "id" | "proof_of_payment_storage_path" | "proof_of_payment_file_name"
 >;
 
+type ImportLogUpdate = Database["public"]["Tables"]["import_logs"]["Update"];
+
 export async function POST(request: Request) {
   const result = await requireImporterContext();
   if (!result.ok) return result.response;
@@ -82,12 +84,14 @@ export async function POST(request: Request) {
       .remove([record.proof_of_payment_storage_path]);
   }
 
+  const updatePayload: ImportLogUpdate = {
+    proof_of_payment_file_name: file.name,
+    proof_of_payment_storage_path: storagePath,
+  };
+
   const { data: updated, error: updateError } = await supabase
     .from("import_logs")
-    .update({
-      proof_of_payment_file_name: file.name,
-      proof_of_payment_storage_path: storagePath,
-    } as never)
+    .update(updatePayload)
     .eq("id", importId)
     .eq("organization_id", organizationId)
     .select("proof_of_payment_file_name, proof_of_payment_storage_path")

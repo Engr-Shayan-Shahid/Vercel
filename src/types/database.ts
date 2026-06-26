@@ -9,6 +9,75 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          id: string;
+          organization_id: string;
+          type: string;
+          message: string;
+          read: boolean;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          type: string;
+          message: string;
+          read?: boolean;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          type?: string;
+          message?: string;
+          read?: boolean;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      audit_logs: {
+        Row: {
+          id: string;
+          organization_id: string;
+          user_id: string;
+          action: string;
+          entity_type: string;
+          entity_id: string;
+          old_values: Json | null;
+          new_values: Json | null;
+          ip_address: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          user_id: string;
+          action: string;
+          entity_type: string;
+          entity_id: string;
+          old_values?: Json | null;
+          new_values?: Json | null;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          user_id?: string;
+          action?: string;
+          entity_type?: string;
+          entity_id?: string;
+          old_values?: Json | null;
+          new_values?: Json | null;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       organizations: {
         Row: {
           id: string;
@@ -16,6 +85,14 @@ export interface Database {
           eori_number: string;
           vat_tax_id: string;
           org_type: string;
+          primary_commodity: string | null;
+          registered_country: string;
+          contact_email: string;
+          ets_price_override: number | null;
+          default_calculation_method: string;
+          reporting_period_mode: string;
+          reporting_year: number | null;
+          reporting_quarter: string | null;
           created_at: string;
         };
         Insert: {
@@ -24,6 +101,14 @@ export interface Database {
           eori_number?: string;
           vat_tax_id?: string;
           org_type?: string;
+          primary_commodity?: string | null;
+          registered_country?: string;
+          contact_email?: string;
+          ets_price_override?: number | null;
+          default_calculation_method?: string;
+          reporting_period_mode?: string;
+          reporting_year?: number | null;
+          reporting_quarter?: string | null;
           created_at?: string;
         };
         Update: {
@@ -32,6 +117,50 @@ export interface Database {
           eori_number?: string;
           vat_tax_id?: string;
           org_type?: string;
+          primary_commodity?: string | null;
+          registered_country?: string;
+          contact_email?: string;
+          ets_price_override?: number | null;
+          default_calculation_method?: string;
+          reporting_period_mode?: string;
+          reporting_year?: number | null;
+          reporting_quarter?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      team_invites: {
+        Row: {
+          id: string;
+          organization_id: string;
+          email: string;
+          token: string;
+          role: string;
+          invited_by: string | null;
+          status: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          email: string;
+          token: string;
+          role?: string;
+          invited_by?: string | null;
+          status?: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          email?: string;
+          token?: string;
+          role?: string;
+          invited_by?: string | null;
+          status?: string;
+          expires_at?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -230,6 +359,7 @@ export interface Database {
           id: string;
           organization_id: string;
           material_type: string;
+          cn_code: string;
           mass: number;
           origin_country: string;
           import_date: string;
@@ -249,6 +379,7 @@ export interface Database {
           id?: string;
           organization_id: string;
           material_type: string;
+          cn_code: string;
           mass: number;
           origin_country: string;
           import_date: string;
@@ -268,6 +399,7 @@ export interface Database {
           id?: string;
           organization_id?: string;
           material_type?: string;
+          cn_code?: string;
           mass?: number;
           origin_country?: string;
           import_date?: string;
@@ -295,6 +427,7 @@ export interface Database {
           new_eu_regulation_alerts: boolean;
           quarterly_report_reminders: boolean;
           security_alerts: boolean;
+          onboarding_completed: boolean;
           updated_at: string;
         };
         Insert: {
@@ -306,6 +439,7 @@ export interface Database {
           new_eu_regulation_alerts?: boolean;
           quarterly_report_reminders?: boolean;
           security_alerts?: boolean;
+          onboarding_completed?: boolean;
           updated_at?: string;
         };
         Update: {
@@ -317,6 +451,7 @@ export interface Database {
           new_eu_regulation_alerts?: boolean;
           quarterly_report_reminders?: boolean;
           security_alerts?: boolean;
+          onboarding_completed?: boolean;
           updated_at?: string;
         };
         Relationships: [];

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getApiContext, requireImporterContext } from "@/lib/auth/api-context";
 import { createShipmentRequestSchema } from "@/lib/shipment-request-schema";
+import { logAuditEvent, AuditAction } from "@/lib/audit-logger";
 import { mapRowToShipmentRequest } from "@/lib/shipment-request-store";
 import { sendInvitationEmail } from "@/lib/email/send-invitation";
 import type { Database } from "@/types/database";
@@ -136,6 +137,17 @@ export async function POST(request: Request) {
     inviteLink,
     token,
   });
+
+  await logAuditEvent(
+    supabase,
+    organizationId,
+    result.context.user.id,
+    AuditAction.SUPPLIER_INVITED,
+    "shipment_request",
+    requestData.id,
+    null,
+    { exporterEmail, materialType, mass, originCountry }
+  );
 
   return NextResponse.json(
     {

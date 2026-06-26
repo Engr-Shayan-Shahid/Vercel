@@ -1,13 +1,14 @@
-import { MATERIAL_BENCHMARKS } from "@/lib/cbam-constants";
-import { getCnCodeForMaterial } from "@/lib/cn-codes";
+import {
+  CBAM_BENCHMARK_ALLOWANCE_FACTOR,
+  MATERIAL_BENCHMARKS,
+} from "@/lib/cbam-constants";
+import { getDefaultCnCodeForMaterial } from "@/lib/cn-codes";
 import type { ImportRecord, MaterialType } from "@/types/import-record";
 import type { AggregatedImportRow } from "@/types/emissions-report";
 
 /**
- * Definitive CBAM report formula factor (97.5% benchmark intensity threshold).
- * Emissions Subject to CBAM = Embedded Emissions − (Benchmark × Mass × 0.975)
+ * Emissions Subject to CBAM = Embedded Emissions − (Benchmark × Mass × CBAM_BENCHMARK_ALLOWANCE_FACTOR)
  */
-export const CBAM_BENCHMARK_FACTOR = 0.975;
 
 export function calculateEmissionsSubjectToCbam(
   embeddedEmissions: number,
@@ -15,7 +16,7 @@ export function calculateEmissionsSubjectToCbam(
   mass: number
 ): number {
   if (mass <= 0) return 0;
-  const deduction = benchmark * mass * CBAM_BENCHMARK_FACTOR;
+  const deduction = benchmark * mass * CBAM_BENCHMARK_ALLOWANCE_FACTOR;
   return Math.max(0, embeddedEmissions - deduction);
 }
 
@@ -44,7 +45,7 @@ export function aggregateImportsByCnAndOrigin(
   const groups = new Map<string, AggregatedImportRow>();
 
   for (const record of imports) {
-    const cnCode = getCnCodeForMaterial(record.materialType);
+    const cnCode = record.cnCode || getDefaultCnCodeForMaterial(record.materialType);
     const key = `${cnCode}|${record.originCountry}`;
 
     const existing = groups.get(key);

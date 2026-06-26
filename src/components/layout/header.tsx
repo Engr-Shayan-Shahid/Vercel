@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Button } from "@/components/ui/button";
 
@@ -25,16 +26,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="flex-1" />
 
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative text-muted-foreground hover:text-foreground"
-          aria-label="Notifications"
-          disabled
-          title="Notifications coming soon"
-        >
-          <Bell className="h-[18px] w-[18px]" />
-        </Button>
+        <NotificationBell />
 
         <div className="hidden h-6 w-px bg-border sm:block" aria-hidden="true" />
 

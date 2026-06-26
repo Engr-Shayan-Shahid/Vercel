@@ -3,6 +3,7 @@
 import { ImportsProvider } from "@/context/imports-context";
 import { UserSettingsProvider } from "@/context/user-settings-context";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { Toaster } from "@/components/ui/sonner";
 
 export function DashboardProviders({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export function DashboardProviders({ children }: { children: React.ReactNode }) 
     <UserSettingsProvider>
       <ImportsProvider>
         <DashboardShell>{children}</DashboardShell>
+        <OnboardingGate />
         <Toaster richColors closeButton position="top-right" />
       </ImportsProvider>
     </UserSettingsProvider>

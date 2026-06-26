@@ -39,7 +39,8 @@ import {
   formatTonnes,
 } from "@/lib/calculate-tax-liability";
 import { getEtsPriceSync } from "@/lib/ets-price";
-import { CBAM_BENCHMARK_FACTOR, summarizeReportFromImports } from "@/lib/report-compliance";
+import { CBAM_BENCHMARK_ALLOWANCE_FACTOR } from "@/lib/cbam-constants";
+import { summarizeReportFromImports } from "@/lib/report-compliance";
 import type { CreateReportInput, ReportQuarter } from "@/types/emissions-report";
 import {
   REPORT_QUARTERS,
@@ -222,7 +223,7 @@ export function NewReportModal({ onCreateReport }: NewReportModalProps) {
             <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
               <Calculator className="h-4 w-4 text-primary" />
               <span>
-                Emissions Subject to CBAM = Embedded − (Benchmark × Mass × {CBAM_BENCHMARK_FACTOR})
+                Emissions Subject to CBAM = Embedded − (Benchmark × Mass × {CBAM_BENCHMARK_ALLOWANCE_FACTOR})
               </span>
             </div>
             {preview ? (

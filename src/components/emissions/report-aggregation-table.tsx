@@ -17,7 +17,7 @@ import {
   formatEmissionFactor,
   formatTonnes,
 } from "@/lib/calculate-tax-liability";
-import { CBAM_BENCHMARK_FACTOR } from "@/lib/report-compliance";
+import { CBAM_BENCHMARK_ALLOWANCE_FACTOR } from "@/lib/cbam-constants";
 import type { AggregatedImportRow } from "@/types/emissions-report";
 
 interface ReportAggregationTableProps {
@@ -37,11 +37,11 @@ export function ReportAggregationTable({ rows }: ReportAggregationTableProps) {
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
               Grouped by CN code and country of origin. Formula: Embedded − (Benchmark × Mass ×{" "}
-              {CBAM_BENCHMARK_FACTOR})
+              {CBAM_BENCHMARK_ALLOWANCE_FACTOR})
             </p>
           </div>
           <Badge variant="outline" className="border-primary/30 text-primary">
-            Applied factor: {CBAM_BENCHMARK_FACTOR}
+            Applied factor: {CBAM_BENCHMARK_ALLOWANCE_FACTOR}
           </Badge>
         </div>
       </CardHeader>

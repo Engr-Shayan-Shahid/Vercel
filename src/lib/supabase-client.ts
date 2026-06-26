@@ -47,6 +47,8 @@ function mapRowsToSettings(profile: ProfileRow, organization: OrganizationRow): 
     newEuRegulationAlerts: profile.new_eu_regulation_alerts,
     quarterlyReportReminders: profile.quarterly_report_reminders,
     securityAlerts: profile.security_alerts,
+    onboardingCompleted: profile.onboarding_completed ?? false,
+    primaryCommodity: organization.primary_commodity ?? null,
     updatedAt: profile.updated_at,
   };
 }
@@ -197,6 +199,31 @@ export async function saveNotificationSettings(
   }
 
   return fetchUserSettings();
+}
+
+export async function completeOnboarding(userId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ onboarding_completed: true } as never)
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+}
+
+export async function saveOnboardingOrgSetup(
+  organizationId: string,
+  values: { companyLegalName: string; eoriNumber: string; primaryCommodity: string }
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      name: values.companyLegalName,
+      eori_number: values.eoriNumber.trim().toUpperCase(),
+      primary_commodity: values.primaryCommodity,
+    } as never)
+    .eq("id", organizationId);
+  if (error) throw new Error(error.message);
 }
 
 /** @deprecated Use saveProfileSettings / saveOrganizationSettings / saveNotificationSettings */

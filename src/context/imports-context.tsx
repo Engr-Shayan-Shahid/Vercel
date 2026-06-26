@@ -18,6 +18,7 @@ import type {
   MaterialType,
 } from "@/types/import-record";
 import { validateImportInput, hasValidationErrors } from "@/types/import-record";
+import { getDefaultCnCodeForMaterial } from "@/lib/cn-codes";
 
 interface MutationResult {
   success: boolean;
@@ -90,6 +91,7 @@ function buildImportRecord(
   return {
     id: base.id,
     materialType: base.materialType,
+    cnCode: overrides.cnCode ?? base.cnCode ?? getDefaultCnCodeForMaterial(base.materialType),
     mass: overrides.mass ?? base.mass ?? 0,
     originCountry: overrides.originCountry ?? base.originCountry ?? "",
     importDate: overrides.importDate ?? base.importDate ?? new Date().toISOString().split("T")[0],
@@ -203,6 +205,7 @@ export function ImportsProvider({ children }: { children: ReactNode }) {
             originCountry: input.originCountry.trim(),
             importDate: input.importDate.trim(),
             emissionFactor: Number(input.emissionFactor),
+            cnCode: input.cnCode.trim(),
             proofOfPaymentFileName: input.proofOfPayment?.name,
           }
         );

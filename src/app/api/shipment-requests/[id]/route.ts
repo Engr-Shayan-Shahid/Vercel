@@ -5,6 +5,8 @@ import {
   requireExporterContext,
   requireImporterContext,
 } from "@/lib/auth/api-context";
+import { logAuditEvent, AuditAction } from "@/lib/audit-logger";
+import { createNotification, resolveSupplierName } from "@/lib/notification-helpers";
 import { patchShipmentRequestSchema } from "@/lib/shipment-submission-schema";
 import { mapRowToShipmentRequest } from "@/lib/shipment-request-store";
 import { buildImportFromShipment } from "@/lib/build-import-from-shipment";
@@ -180,6 +182,25 @@ export async function PATCH(
       emailError = "Importer email not found.";
     }
 
+    // In-app notification for the importer org
+    const supplierName = await resolveSupplierName(
+      supabase,
+      updatedRow.exporter_org_id,
+      updatedRow.exporter_email
+    );
+    await createNotification(
+      supabase,
+      updatedRow.importer_org_id,
+      "supplier_data",
+      `Supplier ${supplierName} submitted emissions data`,
+      {
+        request_id: id,
+        exporter_email: updatedRow.exporter_email,
+        supplier_name: supplierName,
+        material_type: updatedRow.material_type,
+      }
+    );
+
     return NextResponse.json({
       request: updatedRequest,
       emailSent,
@@ -281,6 +302,21 @@ export async function PATCH(
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
+
+    await logAuditEvent(
+      supabase,
+      organizationId,
+      result.context.user.id,
+      AuditAction.SUPPLIER_DATA_RECEIVED,
+      "shipment_request",
+      id,
+      null,
+      {
+        exporterEmail: typedRow.exporter_email,
+        materialType: typedRow.material_type,
+        importLogId,
+      }
+    );
 
     return NextResponse.json({
       request: mapRowToShipmentRequest(updated as ShipmentRequestRow),

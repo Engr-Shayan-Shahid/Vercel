@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { requireImporterContext } from "@/lib/auth/api-context";
 import { generateReportId } from "@/lib/imports-store";
+import { logAuditEvent, AuditAction } from "@/lib/audit-logger";
+import { createNotification } from "@/lib/notification-helpers";
 import {
   mapReportToInsert,
   mapRowToReport,
@@ -9,6 +11,9 @@ import {
 import { summarizeReportFromImports } from "@/lib/report-compliance";
 import type { CreateReportInput, ReportStatus } from "@/types/emissions-report";
 import { formatReportPeriod } from "@/types/emissions-report";
+import type { Database } from "@/types/database";
+
+type EmissionsReportUpdate = Database["public"]["Tables"]["emissions_reports"]["Update"];
 
 export async function GET() {
   const result = await requireImporterContext();
@@ -91,13 +96,32 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .from("emissions_reports")
-    .insert(mapReportToInsert(report, organizationId) as never)
+    .insert(mapReportToInsert(report, organizationId))
     .select("*")
     .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await logAuditEvent(
+    supabase,
+    organizationId,
+    result.context.user.id,
+    AuditAction.REPORT_GENERATED,
+    "emissions_report",
+    data.id,
+    null,
+    { reportId: data.report_id, period: data.period, year: data.year, quarter: data.quarter }
+  );
+
+  await createNotification(
+    supabase,
+    organizationId,
+    "report_ready",
+    `Report ${data.report_id} is ready to download — ${data.period} CBAM declaration`,
+    { report_id: data.id, report_ref: data.report_id, period: data.period }
+  );
 
   return NextResponse.json({ report: mapRowToReport(data), source: "supabase" });
 }
@@ -125,9 +149,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid report status." }, { status: 400 });
   }
 
+  const updatePayload: EmissionsReportUpdate = { status: body.status };
+
   const { data, error } = await supabase
     .from("emissions_reports")
-    .update({ status: body.status } as never)
+    .update(updatePayload)
     .eq("id", body.id)
     .eq("organization_id", organizationId)
     .select("*")
@@ -139,6 +165,19 @@ export async function PATCH(request: Request) {
 
   if (!data) {
     return NextResponse.json({ error: "Report not found." }, { status: 404 });
+  }
+
+  if (body.status === "submitted") {
+    await logAuditEvent(
+      supabase,
+      organizationId,
+      result.context.user.id,
+      AuditAction.DECLARATION_SUBMITTED,
+      "emissions_report",
+      body.id,
+      null,
+      { status: body.status, reportId: data.report_id, period: data.period }
+    );
   }
 
   return NextResponse.json({ report: mapRowToReport(data), source: "supabase" });

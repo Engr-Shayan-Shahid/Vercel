@@ -1,4 +1,6 @@
-export const MATERIAL_TYPES = ["Steel", "Aluminum", "Cement", "Fertilizer"] as const;
+import { getCnCodesForMaterial } from "@/lib/cn-codes";
+
+export const MATERIAL_TYPES = ["Steel", "Aluminum", "Cement", "Fertilizer", "Hydrogen"] as const;
 
 export type MaterialType = (typeof MATERIAL_TYPES)[number];
 
@@ -176,6 +178,7 @@ export type OriginCountry = (typeof ORIGIN_COUNTRIES)[number];
 export interface ImportRecord {
   id: string;
   materialType: MaterialType;
+  cnCode: string;
   mass: number;
   originCountry: string;
   importDate: string;
@@ -238,6 +241,7 @@ export function validateImportEditInput(input: ImportRecordEditInput): ImportFor
 
 export interface ImportRecordInput {
   materialType: MaterialType | "";
+  cnCode: string;
   mass: string;
   originCountry: string;
   importDate: string;
@@ -248,6 +252,7 @@ export interface ImportRecordInput {
 
 export const EMPTY_IMPORT_INPUT: ImportRecordInput = {
   materialType: "",
+  cnCode: "",
   mass: "",
   originCountry: "",
   importDate: "",
@@ -258,6 +263,7 @@ export const EMPTY_IMPORT_INPUT: ImportRecordInput = {
 
 export interface ImportFormErrors {
   materialType?: string;
+  cnCode?: string;
   mass?: string;
   originCountry?: string;
   importDate?: string;
@@ -296,6 +302,15 @@ export function validateImportInput(input: ImportRecordInput): ImportFormErrors 
 
   if (!input.materialType) {
     errors.materialType = "Material type is required.";
+  }
+
+  if (!input.cnCode.trim()) {
+    errors.cnCode = "CN code is required.";
+  } else if (
+    input.materialType &&
+    !getCnCodesForMaterial(input.materialType).some((entry) => entry.code === input.cnCode.trim())
+  ) {
+    errors.cnCode = "CN code must match the selected material type.";
   }
 
   if (!input.mass.trim()) {

@@ -6,6 +6,9 @@ import { ShipmentRequestForm } from "@/components/shipments/shipment-request-for
 import { ShipmentRequestsTable } from "@/components/shipments/shipment-requests-table";
 import { ImporterReviewPanel } from "@/components/shipments/importer-review-panel";
 import { useShipmentRequests } from "@/components/shipments/use-shipment-requests";
+import { ErrorCard } from "@/components/ui/error-card";
+import { SectionErrorBoundary } from "@/components/ui/section-error-boundary";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import type { ShipmentRequest } from "@/types/shipment-request";
 
 export function ShipmentsPageContent() {
@@ -39,36 +42,28 @@ export function ShipmentsPageContent() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Requests</h2>
-          {!isLoading && (
+          {!isLoading && !error && (
             <span className="text-xs text-muted-foreground">
               {requests.length} {requests.length === 1 ? "request" : "requests"}
             </span>
           )}
         </div>
 
-        {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-muted/30" />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-border/60 bg-charcoal/20 py-8 text-center">
-            <p className="text-sm text-destructive">{error}</p>
-            <button
-              onClick={() => void refetch()}
-              className="text-xs text-primary hover:underline"
-            >
-              Retry
-            </button>
-          </div>
-        ) : (
-          <ShipmentRequestsTable
-            requests={requests}
-            variant="importer"
-            onReview={(req) => setReviewingRequest(req)}
-          />
-        )}
+        <SectionErrorBoundary title="Shipments failed to load">
+          {isLoading ? (
+            <TableSkeleton columns={7} rows={5} />
+          ) : error ? (
+            <ErrorCard message={error} onRetry={() => void refetch()} />
+          ) : (
+            <div className="overflow-x-auto">
+              <ShipmentRequestsTable
+                requests={requests}
+                variant="importer"
+                onReview={(req) => setReviewingRequest(req)}
+              />
+            </div>
+          )}
+        </SectionErrorBoundary>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import {
   mapImportToUpdate,
   mapRowToImport,
 } from "@/lib/imports-store";
+import { logAuditEvent, AuditAction } from "@/lib/audit-logger";
 import type { ImportRecord } from "@/types/import-record";
 
 interface RouteContext {
@@ -52,6 +53,17 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Import record not found." }, { status: 404 });
   }
 
+  await logAuditEvent(
+    supabase,
+    organizationId,
+    result.context.user.id,
+    AuditAction.IMPORT_UPDATED,
+    "import_log",
+    id,
+    null,
+    { materialType: data.material_type, mass: data.mass, originCountry: data.origin_country }
+  );
+
   return NextResponse.json({ import: mapRowToImport(data), source: "supabase" });
 }
 
@@ -92,10 +104,32 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   if (existing?.proof_of_payment_storage_path) {
-    await supabase.storage
-      .from("proof-documents")
-      .remove([existing.proof_of_payment_storage_path]);
+    try {
+      const { error: storageError } = await supabase.storage
+        .from("proof-documents")
+        .remove([existing.proof_of_payment_storage_path]);
+
+      if (storageError) {
+        console.error("Storage cleanup failed:", storageError.message);
+        // Non-fatal: record deleted, file orphaned — acceptable
+      }
+    } catch (err) {
+      console.error(
+        "Storage cleanup failed:",
+        err instanceof Error ? err.message : String(err)
+      );
+      // Non-fatal: record deleted, file orphaned — acceptable
+    }
   }
+
+  await logAuditEvent(
+    supabase,
+    organizationId,
+    result.context.user.id,
+    AuditAction.IMPORT_DELETED,
+    "import_log",
+    id
+  );
 
   return NextResponse.json({ success: true, source: "supabase" });
 }

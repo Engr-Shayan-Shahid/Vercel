@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Building2, Factory } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +41,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") ?? null;
   const roleParam = searchParams.get("role");
+  const teamInvite = searchParams.get("team_invite");
   const emailParam = searchParams.get("email") ?? "";
 
   const [accountType, setAccountType] = useState<AccountType>(
@@ -50,16 +51,66 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const isLogin = mode === "login";
   const config = ROLE_CONFIG[accountType];
+
+  useEffect(() => {
+    if (teamInvite) {
+      setAccountType("importer");
+      if (!isLogin) {
+        toast.info("Team invitation", {
+          description: "Create your account to join your organization's workspace.",
+        });
+      }
+    }
+  }, [teamInvite, isLogin]);
+
+  useEffect(() => {
+    if (!forgotPasswordSent) return;
+
+    const timer = window.setTimeout(() => {
+      setForgotPasswordSent(false);
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [forgotPasswordSent]);
 
   function buildToggleHref(targetMode: "login" | "signup") {
     const base = targetMode === "login" ? "/login" : "/signup";
     const params = new URLSearchParams();
     params.set("role", accountType);
     if (redirect && redirect !== "/") params.set("redirect", redirect);
+    if (teamInvite) params.set("team_invite", teamInvite);
     return `${base}?${params.toString()}`;
+  }
+
+  async function handleForgotPassword() {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error("Enter your email address first.");
+      return;
+    }
+
+    setIsResettingPassword(true);
+
+    try {
+      const supabase = createBrowserClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+      if (error) throw error;
+
+      setForgotPasswordSent(true);
+      toast.success("Password reset email sent — check your inbox");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send reset email.");
+    } finally {
+      setIsResettingPassword(false);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -222,21 +273,43 @@ export function AuthForm({ mode }: AuthFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete={isLogin ? "current-password" : "new-password"}
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              disabled={isLoading}
-            />
+            {forgotPasswordSent ? (
+              <div className="rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                A password reset link was sent to{" "}
+                <span className="font-medium text-foreground">{email.trim()}</span>. Check your
+                inbox.
+              </div>
+            ) : (
+              <>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  disabled={isLoading}
+                />
+                {isLogin && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => void handleForgotPassword()}
+                      disabled={isLoading || isResettingPassword}
+                      className="text-xs text-primary hover:underline disabled:opacity-50"
+                    >
+                      {isResettingPassword ? "Sending…" : "Forgot password?"}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading || forgotPasswordSent}>
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

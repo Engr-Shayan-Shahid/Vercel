@@ -17,12 +17,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useImports } from "@/context/imports-context";
+import { getCnCodesForMaterial } from "@/lib/cn-codes";
 import {
   EMPTY_IMPORT_INPUT,
   MATERIAL_TYPES,
   ORIGIN_COUNTRIES,
   type ImportFormErrors,
   type ImportRecordInput,
+  type MaterialType,
 } from "@/types/import-record";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +37,26 @@ export function ImportForm() {
 
   const foreignPriceValue = Number(form.foreignPrice) || 0;
   const requiresProof = foreignPriceValue > 0;
+  const cnCodeOptions =
+    form.materialType ? getCnCodesForMaterial(form.materialType as MaterialType) : [];
+
+  function handleMaterialTypeChange(value: string) {
+    const materialType = value as MaterialType;
+    const codes = getCnCodesForMaterial(materialType);
+
+    setForm((prev) => ({
+      ...prev,
+      materialType,
+      cnCode: codes[0]?.code ?? "",
+    }));
+
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.materialType;
+      delete next.cnCode;
+      return next;
+    });
+  }
 
   function updateField<K extends keyof ImportRecordInput>(key: K, value: ImportRecordInput[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -99,9 +121,7 @@ export function ImportForm() {
             <FieldGroup label="Material Type" error={errors.materialType} htmlFor="materialType">
               <Select
                 value={form.materialType || undefined}
-                onValueChange={(value) =>
-                  updateField("materialType", value as ImportRecordInput["materialType"])
-                }
+                onValueChange={handleMaterialTypeChange}
                 disabled={isLoading}
               >
                 <SelectTrigger id="materialType" aria-invalid={!!errors.materialType}>
@@ -111,6 +131,29 @@ export function ImportForm() {
                   {MATERIAL_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+
+            <FieldGroup label="CN Code" error={errors.cnCode} htmlFor="cnCode">
+              <Select
+                value={form.cnCode || undefined}
+                onValueChange={(value) => updateField("cnCode", value)}
+                disabled={isLoading || !form.materialType}
+              >
+                <SelectTrigger id="cnCode" aria-invalid={!!errors.cnCode}>
+                  <SelectValue
+                    placeholder={
+                      form.materialType ? "Select CN code" : "Select material type first"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {cnCodeOptions.map((entry) => (
+                    <SelectItem key={entry.code} value={entry.code}>
+                      {entry.code} — {entry.description}
                     </SelectItem>
                   ))}
                 </SelectContent>

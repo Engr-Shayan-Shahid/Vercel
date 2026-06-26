@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FileText, Truck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -21,21 +22,24 @@ interface ShipmentRequestsTableProps {
   onReview?: (request: ShipmentRequest) => void;
 }
 
-function EmptyState({ variant }: { variant: "importer" | "exporter" }) {
+function ImporterEmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border/60 bg-charcoal/20 py-16 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
-        <Truck className="h-6 w-6 text-primary" strokeWidth={1.5} />
-      </div>
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">No shipment requests yet</p>
-        <p className="text-xs text-muted-foreground">
-          {variant === "exporter"
-            ? "When an importer sends you a request, it will appear here."
-            : "Create your first request above to invite an exporter."}
-        </p>
-      </div>
-    </div>
+    <EmptyState
+      icon={Truck}
+      title="No supplier requests"
+      description="Invite a supplier to get verified emissions data for your imports."
+      action={{ label: "Invite a supplier", href: "/shipments" }}
+    />
+  );
+}
+
+function ExporterEmptyState() {
+  return (
+    <EmptyState
+      icon={Truck}
+      title="No shipment requests yet"
+      description="When an importer sends you a request, it will appear here."
+    />
   );
 }
 
@@ -45,12 +49,12 @@ export function ShipmentRequestsTable({
   onReview,
 }: ShipmentRequestsTableProps) {
   if (requests.length === 0) {
-    return <EmptyState variant={variant} />;
+    return variant === "exporter" ? <ExporterEmptyState /> : <ImporterEmptyState />;
   }
 
   if (variant === "exporter") {
     return (
-      <div className="overflow-hidden rounded-xl border border-border/60">
+      <div className="overflow-x-auto rounded-xl border border-border/60">
         <Table>
           <TableHeader>
             <TableRow className="bg-charcoal/40 hover:bg-charcoal/50">
@@ -95,7 +99,7 @@ export function ShipmentRequestsTable({
 
   // Importer variant
   return (
-    <div className="overflow-hidden rounded-xl border border-border/60">
+    <div className="overflow-x-auto rounded-xl border border-border/60">
       <Table>
         <TableHeader>
           <TableRow className="bg-charcoal/40 hover:bg-charcoal/50">

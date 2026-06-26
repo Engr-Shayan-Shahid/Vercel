@@ -15,6 +15,7 @@ import {
   saveNotificationSettings,
   saveOrganizationSettings,
   saveProfileSettings,
+  completeOnboarding as completeOnboardingFn,
 } from "@/lib/supabase-client";
 import {
   DEFAULT_USER_SETTINGS,
@@ -33,6 +34,7 @@ interface UserSettingsContextValue {
   saveProfile: (values: ProfileSettingsValues) => Promise<UserSettings>;
   saveOrganization: (values: OrganizationSettingsValues) => Promise<UserSettings>;
   saveNotifications: (values: NotificationSettingsValues) => Promise<UserSettings>;
+  completeOnboarding: () => Promise<void>;
 }
 
 const UserSettingsContext = createContext<UserSettingsContextValue | null>(null);
@@ -136,6 +138,13 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const completeOnboarding = useCallback(async () => {
+    const userId = settingsRef.current.userId;
+    if (!userId) return;
+    await completeOnboardingFn(userId);
+    setSettings((prev) => ({ ...prev, onboardingCompleted: true }));
+  }, []);
+
   const value = useMemo(
     () => ({
       settings,
@@ -146,6 +155,7 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
       saveProfile,
       saveOrganization,
       saveNotifications,
+      completeOnboarding,
     }),
     [
       settings,
@@ -156,6 +166,7 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
       saveProfile,
       saveOrganization,
       saveNotifications,
+      completeOnboarding,
     ]
   );
 

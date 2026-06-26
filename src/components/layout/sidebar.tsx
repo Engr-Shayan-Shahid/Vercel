@@ -8,9 +8,11 @@ import {
   BarChart3,
   Settings,
   Shield,
+  ShieldCheck,
   X,
   Truck,
   Building2,
+  TrendingUp,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -21,6 +23,8 @@ const navItems = [
   { label: "Import Logs", href: "/import-logs", icon: FileText },
   { label: "Emissions Reports", href: "/emissions-reports", icon: BarChart3 },
   { label: "Shipments", href: "/shipments", icon: Truck },
+  { label: "Forecasting", href: "/forecasting", icon: TrendingUp },
+  { label: "Audit Log", href: "/audit-log", icon: ShieldCheck },
   { label: "Settings", href: "/settings", icon: Settings },
 ] as const;
 

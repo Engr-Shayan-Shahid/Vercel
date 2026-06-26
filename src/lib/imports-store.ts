@@ -1,5 +1,6 @@
 import type { ImportRecord } from "@/types/import-record";
 import type { Database } from "@/types/database";
+import { getDefaultCnCodeForMaterial } from "@/lib/cn-codes";
 
 type ImportRow = Database["public"]["Tables"]["import_logs"]["Row"];
 
@@ -9,6 +10,7 @@ export function mapRowToImport(row: ImportRow): ImportRecord {
   return {
     id,
     materialType: row.material_type as ImportRecord["materialType"],
+    cnCode: row.cn_code ?? getDefaultCnCodeForMaterial(row.material_type as ImportRecord["materialType"]),
     mass: Number(row.mass),
     originCountry: row.origin_country,
     importDate: row.import_date ?? row.created_at.split("T")[0],
@@ -34,6 +36,7 @@ export function mapImportToInsert(
     id: record.id,
     organization_id: organizationId,
     material_type: record.materialType,
+    cn_code: record.cnCode,
     mass: record.mass,
     origin_country: record.originCountry,
     import_date: record.importDate,
@@ -56,6 +59,7 @@ export function mapImportToUpdate(
 ): Database["public"]["Tables"]["import_logs"]["Update"] {
   return {
     material_type: record.materialType,
+    cn_code: record.cnCode,
     mass: record.mass,
     origin_country: record.originCountry,
     import_date: record.importDate,

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { ExporterRequestsEmptyState } from "@/components/shipments/exporter-requests-empty-state";
 import { ShipmentRequestsTable } from "@/components/shipments/shipment-requests-table";
 import { useShipmentRequests } from "@/components/shipments/use-shipment-requests";
 import type { ShipmentRequestStatus } from "@/types/shipment-request";
@@ -74,6 +75,8 @@ export function ExporterRequestsContent() {
             Retry
           </button>
         </div>
+      ) : requests.length === 0 ? (
+        <ExporterRequestsEmptyState />
       ) : (
         <ShipmentRequestsTable requests={filtered} variant="exporter" />
       )}

@@ -1,4 +1,4 @@
-import { CBAM_BENCHMARK_FACTOR } from "@/lib/report-compliance";
+import { CBAM_BENCHMARK_ALLOWANCE_FACTOR } from "@/lib/cbam-constants";
 import type { EmissionsReport } from "@/types/emissions-report";
 
 export interface ReportOrganizationMetadata {
@@ -62,7 +62,7 @@ export function generateReportXml(
       <Mass unit="t">${formatDecimal(row.totalMass, 3)}</Mass>
       <EmbeddedEmissions unit="tCO2e">${formatDecimal(row.embeddedEmissions, 3)}</EmbeddedEmissions>
       <Benchmark unit="tCO2e/t">${formatDecimal(row.benchmark, 3)}</Benchmark>
-      <BenchmarkFactor>${CBAM_BENCHMARK_FACTOR}</BenchmarkFactor>
+      <BenchmarkFactor>${CBAM_BENCHMARK_ALLOWANCE_FACTOR}</BenchmarkFactor>
       <EmissionsSubjectToCBAM unit="tCO2e">${formatDecimal(row.emissionsSubjectToCbam, 3)}</EmissionsSubjectToCBAM>
     </Good>`
     )
@@ -83,7 +83,7 @@ export function generateReportXml(
   <Summary>
     <TotalGoods unit="t">${formatDecimal(report.totalGoods, 3)}</TotalGoods>
     <EmbeddedEmissions unit="tCO2e">${formatDecimal(report.embeddedEmissions, 3)}</EmbeddedEmissions>
-    <BenchmarkFactor applied="${CBAM_BENCHMARK_FACTOR}"/>
+    <BenchmarkFactor applied="${CBAM_BENCHMARK_ALLOWANCE_FACTOR}"/>
     <EmissionsSubjectToCBAM unit="tCO2e">${formatDecimal(report.emissionsSubjectToCbam, 3)}</EmissionsSubjectToCBAM>
     <QuarterlyETSPrice currency="EUR">${formatDecimal(report.etsPrice, 2)}</QuarterlyETSPrice>
     <Liability currency="EUR">${formatDecimal(report.liability, 2)}</Liability>

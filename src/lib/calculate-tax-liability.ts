@@ -1,5 +1,5 @@
 import {
-  CBAM_BENCHMARK_ALLOWANCE_FACTOR,
+  CBAM_FACTOR,
   MATERIAL_BENCHMARKS,
 } from "@/lib/cbam-constants";
 import type { ImportRecord } from "@/types/import-record";
@@ -97,7 +97,7 @@ export function getCalculationBreakdown(record: ImportRecord): CalculationBreakd
 
   return {
     certificatePrice: record.etsPrice,
-    cbamFactor: CBAM_BENCHMARK_ALLOWANCE_FACTOR,
+    cbamFactor: CBAM_FACTOR,
     benchmarkDeduction: record.freeAllocation,
     markupApplied: record.emissionFactor >= MATERIAL_BENCHMARKS[record.materialType],
     cbamLiability: taxResult.cbamLiability,
