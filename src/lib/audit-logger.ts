@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
+
+import type { Database, Json } from "@/types/database";
 
 export const AuditAction = {
   IMPORT_CREATED: "IMPORT_CREATED",
@@ -30,8 +31,8 @@ export async function logAuditEvent(
       action,
       entity_type: entityType,
       entity_id: entityId,
-      old_values: oldValues ?? null,
-      new_values: newValues ?? null,
+      old_values: (oldValues ?? null) as Json | null,
+      new_values: (newValues ?? null) as Json | null,
     });
 
     if (error) {

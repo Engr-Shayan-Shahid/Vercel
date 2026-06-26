@@ -152,7 +152,7 @@ export function ForecastingPageContent() {
             <p className="text-xs text-muted-foreground leading-relaxed">
               <span className="font-medium text-foreground">Methodology: </span>
               Projections use average annual tonnage and emission factors from your import logs.
-              The "with default values" line uses the EU punitive benchmark factors per material
+              The &ldquo;with default values&rdquo; line uses the EU punitive benchmark factors per material
               type instead of your actual supplier data. CBAM phase-in rates follow EU Regulation
               2023/956, Article 22. Scenarios are estimates only — consult a compliance adviser for
               regulatory planning.

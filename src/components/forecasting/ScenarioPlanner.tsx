@@ -107,7 +107,7 @@ export function ScenarioPlanner({
         <div className="rounded-lg border border-border/60 bg-black/20 px-4 py-3">
           <p className="text-xs text-muted-foreground">
             Scenarios use your historical average annual import tonnage as a baseline,
-            scaled by the volume multiplier across each year's CBAM phase-in rate.
+            scaled by the volume multiplier across each year&apos;s CBAM phase-in rate.
           </p>
         </div>
       </CardContent>
