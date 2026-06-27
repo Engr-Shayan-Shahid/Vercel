@@ -23,10 +23,15 @@ import {
 import { useImports } from "@/context/imports-context";
 import { useUserSettings } from "@/context/user-settings-context";
 import { useShipmentRequests } from "@/components/shipments/use-shipment-requests";
+import {
+  getCurrentCbamQuarter,
+  getOfficialCbamPrice,
+} from "@/lib/cbam-certificate-price";
 import { getCurrentQuarter } from "@/lib/settings-schema";
 import { getNextDeadline, getDaysUntilDeadline, getDeadlineUrgency } from "@/lib/cbam-deadlines";
 import { importMatchesPeriod } from "@/types/emissions-report";
 import { DEFAULT_ETS_PRICE } from "@/lib/cbam-constants";
+import { getEtsPriceSync } from "@/lib/ets-price";
 import {
   formatTaxLiability,
   formatEmbeddedEmissions,
@@ -59,6 +64,10 @@ export function DashboardContent() {
     refetch: refetchRequests,
   } = useShipmentRequests();
   const { year, quarter } = getCurrentQuarter();
+  const { year: cbamYear, quarter: cbamQuarter } = getCurrentCbamQuarter();
+  const officialCbamPrice = getOfficialCbamPrice(cbamYear, cbamQuarter);
+  const isOfficialCbamPrice = officialCbamPrice != null;
+  const displayCbamPrice = officialCbamPrice ?? getEtsPriceSync();
   const nextDeadline = getNextDeadline();
   const daysUntilDeadline = getDaysUntilDeadline();
   const deadlineUrgency = getDeadlineUrgency();
@@ -121,14 +130,30 @@ export function DashboardContent() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-          {/* Live ETS price */}
-          <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-4 py-2.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-            </span>
-            <span className="text-sm font-semibold text-emerald-400">
-              €{DEFAULT_ETS_PRICE}/tonne ETS
+          {/* CBAM certificate price */}
+          <div
+            className={cn(
+              "flex items-center gap-2.5 rounded-lg border px-4 py-2.5",
+              isOfficialCbamPrice
+                ? "border-emerald-500/25 bg-emerald-500/10"
+                : "border-amber-500/25 bg-amber-500/10"
+            )}
+          >
+            {isOfficialCbamPrice && (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+            )}
+            <span
+              className={cn(
+                "text-sm font-semibold",
+                isOfficialCbamPrice ? "text-emerald-400" : "text-amber-400"
+              )}
+            >
+              {isOfficialCbamPrice
+                ? `€${displayCbamPrice.toFixed(2)}/tCO₂e · ${cbamQuarter} ${cbamYear} official`
+                : `€${displayCbamPrice}/tCO₂e · estimated`}
             </span>
           </div>
 
